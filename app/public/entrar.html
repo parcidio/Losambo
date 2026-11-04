@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Losambo — Entrar</title>
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FFFFFF;font-family:Inter,system-ui,sans-serif;color:#1D1F20}
+a{color:#0051C3}a:hover{color:#003A8C}
+.stripes{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,0.10) 0 2px,transparent 2px 14px)}
+.split{display:grid;grid-template-columns:1fr 1fr;min-height:100vh}
+.field{display:flex;flex-direction:column;gap:6px;text-align:left;margin-bottom:16px}
+.field label{font-size:15px;font-weight:500}
+.field input{min-height:52px;padding:0 16px;border:1px solid #DCDDDF;border-radius:10px;font:16px Inter,sans-serif;color:#1D1F20;box-sizing:border-box;width:100%}
+.field input:focus{outline:2px solid #0051C3;outline-offset:1px;border-color:#0051C3}
+.btn-primary{width:100%;min-height:56px;border:0;border-radius:10px;background:#0051C3;color:#FFFFFF;font:600 17px Inter,sans-serif;cursor:pointer}
+.btn-primary:hover{background:#003A8C}.btn-primary:disabled{opacity:.6;cursor:wait}
+.opt{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:0 20px;background:#FFFFFF;border:1px solid #DCDDDF;border-radius:10px;font:500 17px Inter,sans-serif;color:#1D1F20;margin-bottom:20px;text-align:left;box-sizing:border-box}
+.err{display:none;margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#FDECEA;color:#8A1C12;font-size:15px;text-align:left}
+.linkbtn{background:none;border:0;padding:10px;font:500 18px Inter,sans-serif;color:#0051C3;cursor:pointer}
+@media (max-width:860px){.split{grid-template-columns:1fr}.promo{min-height:420px}}
+</style>
+</head>
+<body>
+<div class="split">
+
+<div style="background:#FFFFFF;display:flex;flex-direction:column;padding:40px 32px">
+<a href="/" style="display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:#1D1F20" aria-label="Losambo — início">
+<img src="/assets/logo.svg" width="40" height="40" alt="">
+</a>
+<div style="flex:1;display:flex;align-items:center;justify-content:center">
+<div style="width:100%;max-width:520px;text-align:center">
+
+<section id="v-login">
+<h1 style="margin:0 0 40px;font-size:34px;font-weight:600;letter-spacing:-0.015em">Entrar na Losambo</h1>
+
+<button type="button" class="opt" disabled aria-disabled="true" style="opacity:.7;cursor:not-allowed">
+<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#12A150" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"></path></svg>
+<span style="flex:1">Entrar com WhatsApp</span>
+<span style="font-size:14px;font-weight:500;color:#4E5255;background:#F1F1F2;border-radius:999px;padding:5px 12px">Brevemente</span>
+</button>
+
+<div style="display:flex;align-items:center;gap:24px;margin:8px 0 28px;color:#6B6F73;font-size:16px"><span style="flex:1;height:1px;background:#E3E4E6"></span>ou com e-mail<span style="flex:1;height:1px;background:#E3E4E6"></span></div>
+
+<form id="f-login" novalidate>
+<p class="err" role="alert"></p>
+<div class="field"><label for="l-email">E-mail</label><input id="l-email" name="email" type="email" autocomplete="email" placeholder="voce@empresa.ao" required></div>
+<div class="field"><label for="l-pw">Palavra-passe</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
+<button type="submit" class="btn-primary">Entrar</button>
+</form>
+
+<p style="margin:32px 0 56px;font-size:18px;color:#4E5255">Ainda não tem conta? <a href="#criar" style="font-weight:500">Criar conta</a></p>
+</section>
+
+<section id="v-signup" hidden>
+<h1 style="margin:0 0 32px;font-size:34px;font-weight:600;letter-spacing:-0.015em">Criar conta Losambo</h1>
+<form id="f-signup" novalidate>
+<p class="err" role="alert"></p>
+<div class="field"><label for="s-name">O seu nome</label><input id="s-name" name="name" autocomplete="name" required></div>
+<div class="field"><label for="s-company">Empresa</label><input id="s-company" name="company" autocomplete="organization" placeholder="MinhaLoja" required></div>
+<div class="field"><label for="s-email">E-mail</label><input id="s-email" name="email" type="email" autocomplete="email" placeholder="voce@empresa.ao" required></div>
+<div class="field"><label for="s-pw">Palavra-passe <span style="color:#6B6F73;font-weight:400">(mín. 8 caracteres)</span></label><input id="s-pw" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+<button type="submit" class="btn-primary">Criar conta grátis</button>
+</form>
+<p style="margin:32px 0 56px;font-size:18px;color:#4E5255">Já tem conta? <a href="#" style="font-weight:500">Entrar</a></p>
+</section>
+
+<p style="margin:0 auto;max-width:380px;font-size:16px;line-height:1.7;color:#4E5255">Ao continuar, aceito os <a href="#" style="color:#4E5255">termos</a>, a <a href="#" style="color:#4E5255">política de privacidade</a> e a <a href="#" style="color:#4E5255">política de cookies</a> do Losambo.</p>
+</div>
+</div>
+</div>
+
+<div class="promo stripes" style="background-color:#F6821F;position:relative;display:flex;flex-direction:column;padding:40px 40px">
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:20px">
+<a href="#criar" style="font-size:17px;font-weight:500;color:#1D1F20;background:#FFFFFF;text-decoration:none;padding:12px 18px;border-radius:8px">Criar conta</a>
+</div>
+<div style="flex:1;display:flex;align-items:center">
+<div style="max-width:480px;padding-left:56px">
+<p style="margin:0 0 20px;font-family:'JetBrains Mono',monospace;font-size:17px;font-weight:500;color:#1D1F20;letter-spacing:0.02em">Losambo para startups</p>
+<h2 style="margin:0 0 24px;font-size:44px;line-height:1.12;font-weight:700;letter-spacing:-0.02em;color:#1D1F20">Onde os negócios angolanos conversam.</h2>
+<p style="margin:0 0 32px;font-size:19px;line-height:1.55;color:#1D1F20">OTP e mensagens no WhatsApp com o número que já usa. Ligue em 2 minutos.</p>
+<a href="/docs" style="display:inline-flex;align-items:center;gap:10px;font-size:17px;font-weight:500;color:#1D1F20;background:#FFFFFF;text-decoration:none;padding:13px 18px;border-radius:8px">
+<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>
+Ver documentação</a>
+</div>
+</div>
+</div>
+
+</div>
+<script>
+function view() {
+  const signup = location.hash === '#criar';
+  document.getElementById('v-login').hidden = signup;
+  document.getElementById('v-signup').hidden = !signup;
+  document.title = signup ? 'Losambo — Criar conta' : 'Losambo — Entrar';
+}
+addEventListener('hashchange', view); view();
+
+function bind(id, url) {
+  const form = document.getElementById(id);
+  const err = form.querySelector('.err');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.style.display = 'none';
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true;
+    try {
+      const res = await fetch(url, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.issues ? 'Verifique os campos: ' + data.issues.map(i => i.path.join('.')).join(', ') : data.message || 'Erro');
+      location.href = '/consola';
+    } catch (ex) {
+      err.textContent = ex.message; err.style.display = 'block';
+    } finally { btn.disabled = false; }
+  });
+}
+bind('f-login', '/console-api/auth/login');
+bind('f-signup', '/console-api/auth/signup');
+</script>
+</body>
+</html>

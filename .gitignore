@@ -1,0 +1,7 @@
+# Clone separado do WAHA (repositório próprio, sem alterações nossas)
+waha/
+
+node_modules/
+dist/
+.env
+*.log

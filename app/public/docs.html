@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Losambo — Documentação da API</title>
+<link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FFFFFF}
+a{color:#0051C3}a:hover{color:#003A8C}
+code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:0.86em;background:#F2F3F5;padding:2px 6px;border-radius:4px}
+@media (max-width:980px){.docs{grid-template-columns:1fr !important}.toc{display:none !important}.ep{grid-template-columns:1fr !important}}
+</style>
+</head>
+<body>
+<div style="font-family: Inter, system-ui, sans-serif; color: #1D1F20; background: #FFFFFF; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #E3E4E6; background: #FFFFFF">
+<div style="max-width: 1360px; margin: 0 auto; padding: 0 24px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px">
+<div style="display: flex; align-items: center; gap: 12px">
+<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M16.6 11 C21 9.2 27 9.8 30 14 C32 17 31.6 23 29 27.5" fill="none" stroke="#FBAD41" stroke-width="1.6" stroke-linecap="round"></path><g transform="rotate(-18 16 17)"><rect x="14" y="1" width="4" height="3.4" rx="1" fill="#FBAD41"></rect><path d="M14 4 C12 5 11.5 9 13.5 12 C7 14 4.5 18 4.5 22 C4.5 27.5 9.5 31 16 31 C22.5 31 27.5 27.5 27.5 22 C27.5 18 25 14 18.5 12 C20.5 9 20 5 18 4 Z" fill="#F6821F"></path><rect x="12.8" y="11.1" width="6.4" height="1.9" rx="0.95" fill="#FBAD41"></rect><circle cx="11" cy="22.5" r="1.8" fill="#FFFFFF"></circle><circle cx="16" cy="22.5" r="1.8" fill="#FFFFFF"></circle><circle cx="21" cy="22.5" r="1.8" fill="#FFFFFF"></circle></g></svg>
+<span style="font-weight: 700; font-size: 18px">Losambo</span><span style="font-size: 18px; color: #4E5255">Docs</span>
+</div>
+<div style="flex: 1; max-width: 460px; display: flex; align-items: center; gap: 10px; background: #F7F7F8; border: 1px solid #DCDDDF; border-radius: 10px; padding: 0 12px; height: 42px">
+<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#6B6F73" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label for="dsearch" style="position: absolute; left: -9999px">Pesquisar na documentação</label>
+<input id="dsearch" type="search" placeholder="Pesquisar na documentação" style="flex: 1; border: 0; outline: 0; background: transparent; font: 15px Inter, sans-serif; min-width: 0">
+<span style="font-size: 12px; color: #6B6F73">Ctrl K</span>
+</div>
+<a href="/consola" style="font-size: 15px; font-weight: 600; color: #FFFFFF; background: #0051C3; text-decoration: none; padding: 11px 16px; border-radius: 8px">Abrir consola</a>
+</div>
+</header>
+
+<div class="docs" style="max-width: 1360px; margin: 0 auto; display: grid; grid-template-columns: 250px 1fr; gap: 48px; padding: 0 24px">
+<nav class="toc" style="padding: 32px 0; font-size: 15px; display: flex; flex-direction: column; gap: 2px; position: sticky; top: 0; align-self: start">
+<p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #4E5255; text-transform: uppercase; letter-spacing: 0.06em">Começar</p>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none" >Autenticação</a>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Erros</a>
+<p style="margin: 18px 0 8px; font-size: 13px; font-weight: 600; color: #4E5255; text-transform: uppercase; letter-spacing: 0.06em">Referência</p>
+<a href="#numeros" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Números</a>
+<a href="#otp" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; background: #FFF4E5; font-weight: 600; text-decoration: none; border-left: 3px solid #F6821F">OTP</a>
+<a href="#msg" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Mensagens</a>
+<a href="#wh" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Webhooks</a>
+<p style="margin: 18px 0 8px; font-size: 13px; font-weight: 600; color: #4E5255; text-transform: uppercase; letter-spacing: 0.06em">Guias</p>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Verificação inversa</a>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Evitar bloqueios</a>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; color: #1D1F20; text-decoration: none">Spring Boot</a>
+</nav>
+
+<main style="padding: 40px 0 72px; min-width: 0">
+<p style="margin: 0 0 8px; font-size: 14px; color: #4E5255">Referência</p>
+<h1 style="margin: 0 0 12px; font-size: 40px; font-weight: 700; letter-spacing: -0.02em">API do Losambo</h1>
+<p style="margin: 0 0 28px; font-size: 17px; line-height: 1.6; color: #3A3D40; max-width: 760px">Uma API pequena por cima do WAHA. Cada endpoint Losambo faz uma ou mais chamadas WAHA por si e acrescenta contas, OTP, limites e faturação.</p>
+
+<div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 40px">
+<div style="flex: 1; min-width: 260px; border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px 18px"><p style="margin: 0 0 4px; font-size: 13px; color: #4E5255">URL base</p><p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 15px"><span data-api-url>https://losambo-api.beeznoo.ao/v1</span></p></div>
+<div style="flex: 1; min-width: 260px; border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px 18px"><p style="margin: 0 0 4px; font-size: 13px; color: #4E5255">Autenticação</p><p style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 15px">Authorization: Bearer lsb_live_…</p></div>
+</div>
+
+<h2 style="margin: 0 0 16px; font-size: 24px">Todos os endpoints</h2>
+<div style="border: 1px solid #E3E4E6; border-radius: 10px; overflow-x: auto; margin-bottom: 56px">
+<table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 14px">
+<thead><tr style="background: #FAFAFA; text-align: left; color: #4E5255"><th style="padding: 12px 16px; font-weight: 500">Losambo</th><th style="padding: 12px 16px; font-weight: 500">O que faz</th><th style="padding: 12px 16px; font-weight: 500">Por baixo · WAHA</th></tr></thead>
+<tbody style="font-family: 'JetBrains Mono', monospace; font-size: 13px">
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /numbers</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Criar e iniciar número</td><td style="padding: 12px 16px; color: #4E5255">POST /api/sessions</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0B6B3A; font-weight: 600">GET</span> /numbers/{id}/qr</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">QR para associar</td><td style="padding: 12px 16px; color: #4E5255">GET /api/{s}/auth/qr</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /numbers/{id}/pairing-code</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Código em vez de QR</td><td style="padding: 12px 16px; color: #4E5255">POST /api/{s}/auth/request-code</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0B6B3A; font-weight: 600">GET</span> /numbers/{id}/health</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Estado, quota e bloqueios</td><td style="padding: 12px 16px; color: #4E5255">GET /api/sessions/{s} · /capping · /timelock</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /numbers/{id}/restart</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Reiniciar ligação</td><td style="padding: 12px 16px; color: #4E5255">POST /api/sessions/{s}/restart</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #B42318; font-weight: 600">DELETE</span> /numbers/{id}</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Desassociar e apagar</td><td style="padding: 12px 16px; color: #4E5255">POST /api/sessions/{s}/logout · DELETE</td></tr>
+<tr style="border-top: 1px solid #ECECED; background: #FFFAF4"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /otp/send</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Enviar código</td><td style="padding: 12px 16px; color: #4E5255">check-exists → startTyping → sendText</td></tr>
+<tr style="border-top: 1px solid #ECECED; background: #FFFAF4"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /otp/reverse</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Verificação inversa (link wa.me)</td><td style="padding: 12px 16px; color: #4E5255">webhook message</td></tr>
+<tr style="border-top: 1px solid #ECECED; background: #FFFAF4"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /otp/verify</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Validar código</td><td style="padding: 12px 16px; color: #4E5255">— (só Losambo)</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0051C3; font-weight: 600">POST</span> /messages</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Texto, imagem, ficheiro</td><td style="padding: 12px 16px; color: #4E5255">sendText · sendImage · sendFile</td></tr>
+<tr style="border-top: 1px solid #ECECED"><td style="padding: 12px 16px"><span style="color: #0B6B3A; font-weight: 600">GET</span> /contacts/{phone}</td><td style="padding: 12px 16px; font-family: Inter, sans-serif; font-size: 14px">Tem WhatsApp?</td><td style="padding: 12px 16px; color: #4E5255">GET /api/contacts/check-exists</td></tr>
+</tbody>
+</table>
+</div>
+
+<section id="otp" style="border-top: 1px solid #E3E4E6; padding-top: 40px; margin-bottom: 56px">
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap">
+<span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #FFFFFF; background: #0051C3; border-radius: 6px; padding: 4px 8px">POST</span>
+<h2 style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 500">/v1/otp/send</h2>
+</div>
+<p style="margin: 0 0 28px; font-size: 16px; line-height: 1.6; color: #3A3D40; max-width: 760px">Gera um código de 6 dígitos, confirma que o número tem WhatsApp, mostra “a escrever…” e envia. O código fica guardado só como hash e expira em 5 minutos.</p>
+
+<div class="ep" style="display: grid; grid-template-columns: 1fr 1fr; gap: 32px">
+<div>
+<h3 style="margin: 0 0 12px; font-size: 16px">Corpo do pedido</h3>
+<dl style="margin: 0 0 28px; border-top: 1px solid #ECECED">
+<div style="border-bottom: 1px solid #ECECED; padding: 14px 0"><dt style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500">to <span style="font-family: Inter, sans-serif; font-size: 12px; color: #B42318; font-weight: 600">obrigatório</span></dt><dd style="margin: 4px 0 0; font-size: 14px; color: #4E5255">Número em formato internacional, ex. <code>+2449XXXXXXXX</code>.</dd></div>
+<div style="border-bottom: 1px solid #ECECED; padding: 14px 0"><dt style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500">app</dt><dd style="margin: 4px 0 0; font-size: 14px; color: #4E5255">Nome mostrado na mensagem.</dd></div>
+<div style="border-bottom: 1px solid #ECECED; padding: 14px 0"><dt style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500">via</dt><dd style="margin: 4px 0 0; font-size: 14px; color: #4E5255">Número a usar. Sem valor, o Losambo escolhe o número com mais quota livre.</dd></div>
+<div style="border-bottom: 1px solid #ECECED; padding: 14px 0"><dt style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 500">fallback</dt><dd style="margin: 4px 0 0; font-size: 14px; color: #4E5255"><code>"reverse"</code> devolve um link de verificação inversa se o número estiver limitado.</dd></div>
+</dl>
+<h3 style="margin: 0 0 12px; font-size: 16px">Erros</h3>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+<p style="margin: 0"><code>404 not_on_whatsapp</code> — o destinatário não tem WhatsApp.</p>
+<p style="margin: 0"><code>409 number_not_working</code> — o número está desligado (estado diferente de WORKING).</p>
+<p style="margin: 0"><code>429 number_capped</code> — quota de novas conversas esgotada (CAPPED).</p>
+<p style="margin: 0"><code>402 subscription_inactive</code> — a subscrição da conta não está ativa; toda a API fica desativada.</p>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="background: #1D1F20; border-radius: 10px; overflow: hidden">
+<div style="display: flex; gap: 16px; padding: 12px 16px; border-bottom: 1px solid #34383C; font-family: 'JetBrains Mono', monospace; font-size: 13px">
+<span style="color: #FFB766; border-bottom: 2px solid #F6821F; padding-bottom: 4px">Java</span><span style="color: #A9ADB1">curl</span><span style="color: #A9ADB1">Node</span>
+</div>
+<pre style="margin: 0; padding: 18px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: #E6E7E8; white-space: pre-wrap">var res = losambo.otp().send(
+  OtpSend.builder()
+    .to("+2449XXXXXXXX")
+    .app("MinhaLoja")
+    .fallback("reverse")
+    .build());</pre>
+</div>
+<div style="background: #1D1F20; border-radius: 10px; overflow: hidden">
+<p style="margin: 0; padding: 12px 16px; border-bottom: 1px solid #34383C; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #7FD1A0">202 Accepted</p>
+<pre style="margin: 0; padding: 18px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: #E6E7E8; white-space: pre-wrap">{
+  "id": "otp_8f2c",
+  "status": "sent",
+  "via": "minhaloja-01",
+  "expires_in": 300
+}</pre>
+</div>
+<div style="border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px 18px">
+<p style="margin: 0 0 10px; font-size: 13px; font-weight: 600; color: #4E5255">Sequência no WAHA</p>
+<ol style="margin: 0; padding-left: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.9">
+<li>GET /api/contacts/check-exists</li>
+<li>GET /api/sessions/{s}/capping</li>
+<li>POST /api/startTyping</li>
+<li>POST /api/sendText</li>
+<li>POST /api/stopTyping</li>
+</ol>
+</div>
+</div>
+</div>
+</section>
+
+<section id="wh" style="border-top: 1px solid #E3E4E6; padding-top: 40px">
+<h2 style="margin: 0 0 10px; font-size: 24px">Eventos de webhook</h2>
+<p style="margin: 0 0 20px; font-size: 16px; color: #3A3D40; max-width: 760px; line-height: 1.6">Repassamos os eventos do WAHA com a mesma forma e acrescentamos eventos próprios do Losambo.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+<div style="border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px"><code>message</code><p style="margin: 8px 0 0; font-size: 14px; color: #4E5255">Mensagem recebida.</p></div>
+<div style="border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px"><code>message.ack</code><p style="margin: 8px 0 0; font-size: 14px; color: #4E5255">Enviada, entregue ou lida.</p></div>
+<div style="border: 1px solid #E3E4E6; border-radius: 10px; padding: 16px"><code>session.status</code><p style="margin: 8px 0 0; font-size: 14px; color: #4E5255">WORKING, SCAN_QR_CODE, FAILED…</p></div>
+<div style="border: 1px solid #FFD2A6; background: #FFFAF4; border-radius: 10px; padding: 16px"><code>otp.verified</code><p style="margin: 8px 0 0; font-size: 14px; color: #4E5255">Código confirmado (envio ou inverso).</p></div>
+<div style="border: 1px solid #FFD2A6; background: #FFFAF4; border-radius: 10px; padding: 16px"><code>number.capping</code><p style="margin: 8px 0 0; font-size: 14px; color: #4E5255">Número chegou a um aviso de quota.</p></div>
+</div>
+</section>
+</main>
+</div>
+
+</div>
+<script>
+fetch('/console-api/me').then(r => r.ok ? r.json() : null).then(me => {
+  if (!me) return;
+  document.querySelectorAll('[data-api-url]').forEach(el => { el.textContent = me.publicApiUrl; });
+}).catch(() => {});
+</script>
+</body>
+</html>
