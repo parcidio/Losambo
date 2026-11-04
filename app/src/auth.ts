@@ -8,7 +8,8 @@ export interface SessionUser {
   id: number;
   tenant_id: number;
   name: string;
-  email: string;
+  email: string | null;
+  phone: string | null;
   is_admin: boolean;
 }
 
@@ -51,7 +52,7 @@ export const requireUser = asyncHandler(async (req: Request, _res: Response, nex
   const t = req.cookies?.[COOKIE];
   if (!t) throw new ApiError(401, 'unauthenticated', 'Sessão expirada. Entre novamente.');
   const user = await one<SessionUser>(
-    `SELECT u.id, u.tenant_id, u.name, u.email, u.is_admin FROM user_sessions s JOIN users u ON u.id = s.user_id
+    `SELECT u.id, u.tenant_id, u.name, u.email, u.phone, u.is_admin FROM user_sessions s JOIN users u ON u.id = s.user_id
      WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [sha256(t)],
   );

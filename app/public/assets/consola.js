@@ -890,7 +890,7 @@ async function loadMe() {
   ME = await api('GET', '/me');
   $('#tenant-name').textContent = ME.tenant.name;
   $('#plan-label').textContent = `Plano ${ME.tenant.plan_label}`;
-  $('#user-email').textContent = ME.user.email;
+  $('#user-email').textContent = ME.user.email || (ME.user.phone ? '+' + ME.user.phone : '');
   $('#nav-admin').hidden = !ME.user.is_admin;
   const sub = ME.subscription;
   const banner = $('#sub-banner');

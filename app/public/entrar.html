@@ -21,6 +21,8 @@ a{color:#B4540A}a:hover{color:#8A4100}
 .opt{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:0 20px;background:#FFFFFF;border:1px solid #DCDDDF;border-radius:10px;font:500 17px Inter,sans-serif;color:#1D1F20;margin-bottom:20px;text-align:left;box-sizing:border-box}
 [hidden]{display:none !important}
 .opt.google{text-decoration:none;cursor:pointer}.opt.google:hover{border-color:#F6821F;background:#FFF8F0}
+.ok{display:none;margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#E8F6EE;color:#0B5A2C;font-size:15px;text-align:left}
+.opt.wa{text-decoration:none;cursor:pointer}.opt.wa:hover{border-color:#F6821F;background:#FFF8F0}
 .err{display:none;margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#FDECEA;color:#8A1C12;font-size:15px;text-align:left}
 .linkbtn{background:none;border:0;padding:10px;font:500 18px Inter,sans-serif;color:#B4540A;cursor:pointer}
 .promo{overflow:hidden}
@@ -50,11 +52,11 @@ a{color:#B4540A}a:hover{color:#8A4100}
 <span style="flex:1">Continuar com Google</span>
 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
 </a>
-<button type="button" class="opt" disabled aria-disabled="true" style="opacity:.7;cursor:not-allowed">
+<a class="opt wa" href="#whatsapp">
 <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#12A150" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"></path></svg>
 <span style="flex:1">Entrar com WhatsApp</span>
-<span style="font-size:14px;font-weight:500;color:#4E5255;background:#F1F1F2;border-radius:999px;padding:5px 12px">Brevemente</span>
-</button>
+<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+</a>
 
 <div style="display:flex;align-items:center;gap:24px;margin:8px 0 28px;color:#6B6F73;font-size:16px"><span style="flex:1;height:1px;background:#E3E4E6"></span>ou com e-mail<span style="flex:1;height:1px;background:#E3E4E6"></span></div>
 
@@ -75,7 +77,12 @@ a{color:#B4540A}a:hover{color:#8A4100}
 <span style="flex:1">Continuar com Google</span>
 <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
 </a>
-<div class="or-google" hidden style="display:flex;align-items:center;gap:24px;margin:0 0 24px;color:#6B6F73;font-size:16px"><span style="flex:1;height:1px;background:#E3E4E6"></span>ou com e-mail<span style="flex:1;height:1px;background:#E3E4E6"></span></div>
+<a class="opt wa" href="#criar-whatsapp">
+<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#12A150" stroke-width="2" stroke-linejoin="round"><path d="M4 20l1.3-4A8 8 0 1 1 8 18.7z"></path></svg>
+<span style="flex:1">Criar conta com WhatsApp</span>
+<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2"><path d="M4 12h15M13 6l6 6-6 6"></path></svg>
+</a>
+<div style="display:flex;align-items:center;gap:24px;margin:0 0 24px;color:#6B6F73;font-size:16px"><span style="flex:1;height:1px;background:#E3E4E6"></span>ou com e-mail<span style="flex:1;height:1px;background:#E3E4E6"></span></div>
 <form id="f-signup" novalidate>
 <p class="err" role="alert"></p>
 <div class="field"><label for="s-name">O seu nome</label><input id="s-name" name="name" autocomplete="name" required></div>
@@ -85,6 +92,32 @@ a{color:#B4540A}a:hover{color:#8A4100}
 <button type="submit" class="btn-primary">Criar conta grátis</button>
 </form>
 <p style="margin:32px 0 56px;font-size:18px;color:#4E5255">Já tem conta? <a href="#" style="font-weight:500">Entrar</a></p>
+</section>
+
+<section id="v-wa" hidden>
+<h1 id="wa-title" style="margin:0 0 12px;font-size:34px;font-weight:600;letter-spacing:-0.015em">Entrar com WhatsApp</h1>
+<p style="margin:0 0 32px;font-size:17px;line-height:1.55;color:#4E5255">Confirmamos que o número tem WhatsApp e enviamos-lhe um código de 6 dígitos.</p>
+
+<form id="f-wa-start" novalidate>
+<p class="err" role="alert"></p>
+<div class="field wa-signup"><label for="w-name">O seu nome</label><input id="w-name" name="name" autocomplete="name"></div>
+<div class="field wa-signup"><label for="w-company">Empresa</label><input id="w-company" name="company" autocomplete="organization" placeholder="MinhaLoja"></div>
+<div class="field"><label for="w-phone">Número WhatsApp</label><input id="w-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+244 923 000 000" required></div>
+<button type="submit" class="btn-primary">Enviar código por WhatsApp</button>
+</form>
+
+<form id="f-wa-code" novalidate hidden>
+<p class="ok" role="status"></p>
+<p class="err" role="alert"></p>
+<div class="field"><label for="w-code">Código de 6 dígitos</label><input id="w-code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000 000" required style="font:500 22px 'JetBrains Mono',monospace;letter-spacing:.2em;text-align:center"></div>
+<button type="submit" class="btn-primary" id="wa-confirm">Entrar</button>
+<p style="margin:20px 0 0;display:flex;justify-content:center;gap:4px;flex-wrap:wrap">
+<button type="button" class="linkbtn" id="wa-resend" style="font-size:16px">Reenviar código</button>
+<button type="button" class="linkbtn" id="wa-change" style="font-size:16px">Mudar número</button>
+</p>
+</form>
+
+<p style="margin:32px 0 56px;font-size:18px;color:#4E5255"><a href="#" id="wa-back" style="font-weight:500">Voltar</a></p>
 </section>
 
 <p style="margin:0 auto;max-width:380px;font-size:16px;line-height:1.7;color:#4E5255">Ao continuar, aceito os <a href="#" style="color:#4E5255">termos</a>, a <a href="#" style="color:#4E5255">política de privacidade</a> e a <a href="#" style="color:#4E5255">política de cookies</a> do Losambo.</p>
@@ -140,11 +173,84 @@ Ver documentação</a>
 </div>
 <script>
 function view() {
-  const signup = location.hash === '#criar';
-  document.getElementById('v-login').hidden = signup;
-  document.getElementById('v-signup').hidden = !signup;
+  const h = location.hash;
+  const wa = h === '#whatsapp' || h === '#criar-whatsapp';
+  const signup = h === '#criar' || h === '#criar-whatsapp';
+  document.getElementById('v-login').hidden = wa || signup;
+  document.getElementById('v-signup').hidden = wa || !signup;
+  document.getElementById('v-wa').hidden = !wa;
+  if (wa) waSetup(signup ? 'signup' : 'login');
   document.title = signup ? 'Losambo — Criar conta' : 'Losambo — Entrar';
 }
+// Entrar / criar conta com WhatsApp
+const WA = { mode: 'login', id: null, timer: null };
+const waStart = document.getElementById('f-wa-start');
+const waCode = document.getElementById('f-wa-code');
+function waSetup(mode) {
+  WA.mode = mode; WA.id = null;
+  clearInterval(WA.timer);
+  document.getElementById('wa-title').textContent = mode === 'signup' ? 'Criar conta com WhatsApp' : 'Entrar com WhatsApp';
+  document.getElementById('wa-confirm').textContent = mode === 'signup' ? 'Criar conta' : 'Entrar';
+  document.getElementById('wa-back').setAttribute('href', mode === 'signup' ? '#criar' : '#');
+  waStart.querySelectorAll('.wa-signup').forEach((el) => { el.hidden = mode !== 'signup'; el.querySelector('input').required = mode === 'signup'; });
+  waStart.hidden = false; waCode.hidden = true;
+  showMsg(waStart);
+}
+async function post(url, body) {
+  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.issues ? 'Verifique os campos: ' + data.issues.map((i) => i.path.join('.')).join(', ') : data.message || 'Erro');
+  return data;
+}
+function showMsg(form, cls, text) {
+  form.querySelectorAll('.err, .ok').forEach((e) => { e.style.display = 'none'; });
+  if (!text) return;
+  const el = form.querySelector('.' + cls); el.textContent = text; el.style.display = 'block';
+}
+function countdown(seconds) {
+  const btn = document.getElementById('wa-resend');
+  clearInterval(WA.timer);
+  let left = seconds;
+  const tick = () => {
+    btn.disabled = left > 0;
+    btn.textContent = left > 0 ? 'Reenviar código (' + left + ' s)' : 'Reenviar código';
+    if (left-- <= 0) clearInterval(WA.timer);
+  };
+  tick(); WA.timer = setInterval(tick, 1000);
+}
+async function requestCode() {
+  const body = Object.fromEntries(new FormData(waStart));
+  body.mode = WA.mode;
+  if (WA.mode !== 'signup') { delete body.name; delete body.company; }
+  const r = await post('/console-api/auth/whatsapp/start', body);
+  WA.id = r.id;
+  waStart.hidden = true; waCode.hidden = false;
+  showMsg(waCode, 'ok', 'Enviámos um código por WhatsApp para ' + r.phone + '.');
+  const input = document.getElementById('w-code'); input.value = ''; input.focus();
+  countdown(r.resend_in || 60);
+}
+waStart.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = waStart.querySelector('button[type=submit]');
+  btn.disabled = true; showMsg(waStart);
+  try { await requestCode(); } catch (ex) { showMsg(waStart, 'err', ex.message); } finally { btn.disabled = false; }
+});
+waCode.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = waCode.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    await post('/console-api/auth/whatsapp/verify', { id: WA.id, code: document.getElementById('w-code').value });
+    location.href = '/consola';
+  } catch (ex) { showMsg(waCode, 'err', ex.message); } finally { btn.disabled = false; }
+});
+document.getElementById('wa-resend').addEventListener('click', async () => {
+  try { await requestCode(); } catch (ex) { showMsg(waCode, 'err', ex.message); }
+});
+document.getElementById('wa-change').addEventListener('click', () => {
+  clearInterval(WA.timer); waCode.hidden = true; waStart.hidden = false; showMsg(waStart);
+  document.getElementById('w-phone').focus();
+});
 addEventListener('hashchange', view); view();
 
 function bind(id, url) {
@@ -185,7 +291,7 @@ if (erro) {
 }
 fetch('/console-api/auth/providers').then((r) => r.json()).then((p) => {
   if (!p.google) return;
-  document.querySelectorAll('.opt.google, .or-google').forEach((el) => { el.hidden = false; });
+  document.querySelectorAll('.opt.google').forEach((el) => { el.hidden = false; });
 }).catch(() => {});
 bind('f-login', '/console-api/auth/login');
 bind('f-signup', '/console-api/auth/signup');

@@ -75,6 +75,18 @@ O botão "Continuar com Google" só aparece quando o Google está configurado. Q
 com o Google ganha uma conta (com os números Losambo por omissão); se já existir uma conta com o mesmo
 e-mail verificado, o Google fica ligado a essa conta.
 
+## Entrar com WhatsApp
+
+- **Entrar** (`/entrar#whatsapp`): o número tem de pertencer a uma conta e é confirmado no WhatsApp
+  (`GET /api/contacts/check-exists`); depois recebe um código de 6 dígitos por WhatsApp.
+- **Criar conta** (`/entrar#criar-whatsapp`): nome, empresa e número → check-exists → código por WhatsApp →
+  a conta só é criada depois de o código ser confirmado.
+- Os códigos saem de um número Losambo ligado (`WORKING`): o de `WHATSAPP_AUTH_SESSION`, ou o primeiro
+  número Losambo (os "por omissão" primeiro). Sem nenhum ligado, a opção responde
+  "indisponível" e mantém-se a entrada por e-mail.
+- Limites: 1 código por minuto e 5 por hora por número, 20 por hora por IP; 5 tentativas por código; expira em 5 minutos.
+- API da consola: `POST /console-api/auth/whatsapp/start` e `POST /console-api/auth/whatsapp/verify`.
+
 ## Números: Losambo vs. próprios
 
 - **Números Losambo** (sessões `lsb_NN`): ligados pelo super-admin em *Números Losambo* e partilhados

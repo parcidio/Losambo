@@ -27,6 +27,7 @@ import {
 import { createAccount } from '../services/accounts.js';
 import { setSubscription } from '../services/subscriptions.js';
 import { googleEnabled } from './googleAuth.js';
+import { startWhatsAppAuth, verifyWhatsAppAuth } from '../services/whatsappAuth.js';
 import { effectivePlan, getTenant, subscriptionActive } from '../services/tenants.js';
 import { emit, getEndpoint, rotateSecret, saveEndpoint } from '../services/webhooks.js';
 import { phoneDigits, wahaAdmin } from '../waha.js';
@@ -75,8 +76,58 @@ consoleApi.post(
 );
 
 consoleApi.get('/auth/providers', (_req, res) => {
-  res.json({ google: googleEnabled() });
+  res.json({ google: googleEnabled(), whatsapp: true });
 });
+
+// Entrar / criar conta com WhatsApp: check-exists no WAHA → código enviado por WhatsApp → confirmação.
+consoleApi.post(
+  '/auth/whatsapp/start',
+  asyncHandler(async (req, res) => {
+    const body = parse(
+      z.discriminatedUnion('mode', [
+        z.object({ mode: z.literal('login'), phone: z.string().min(6).max(32) }),
+        z.object({
+          mode: z.literal('signup'),
+          phone: z.string().min(6).max(32),
+          name: z.string().trim().min(2).max(80),
+          company: z.string().trim().min(2).max(80),
+        }),
+      ]),
+      req.body,
+    );
+    const r = await startWhatsAppAuth({
+      phone: body.phone,
+      purpose: body.mode,
+      payload: body.mode === 'signup' ? { name: body.name, company: body.company } : undefined,
+      ip: req.ip ?? null,
+    });
+    res.status(202).json(r);
+  }),
+);
+
+consoleApi.post(
+  '/auth/whatsapp/verify',
+  asyncHandler(async (req, res) => {
+    const body = parse(z.object({ id: z.string().min(1).max(64), code: z.string().min(4).max(12) }), req.body);
+    const r = await verifyWhatsAppAuth(body);
+    let user = await one<{ id: number }>('SELECT id FROM users WHERE phone = $1', [r.phone]);
+    if (r.purpose === 'login') {
+      if (!user) throw new ApiError(404, 'no_account', 'Não existe nenhuma conta com este número WhatsApp.');
+    } else {
+      if (user) throw new ApiError(409, 'phone_taken', 'Já existe uma conta com este número WhatsApp. Entre com ele.');
+      const { userId } = await createAccount({
+        name: r.payload?.name,
+        company: r.payload?.company,
+        email: null,
+        phone: r.phone,
+        passwordHash: null,
+      });
+      user = { id: userId };
+    }
+    await startSession(res, user.id);
+    res.status(r.purpose === 'signup' ? 201 : 200).json({ ok: true });
+  }),
+);
 
 consoleApi.post(
   '/auth/login',
@@ -86,7 +137,7 @@ consoleApi.post(
       body.email.toLowerCase(),
     ]);
     if (u && !u.password_hash) {
-      throw new ApiError(401, 'google_account', 'Esta conta entra com o Google. Use “Continuar com Google”.');
+      throw new ApiError(401, 'no_password', 'Esta conta não tem palavra-passe. Entre com o Google ou com o WhatsApp.');
     }
     if (!u || !(await verifyPassword(body.password, u.password_hash!))) {
       throw new ApiError(401, 'invalid_credentials', 'E-mail ou palavra-passe errados.');

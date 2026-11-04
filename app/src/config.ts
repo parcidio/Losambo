@@ -25,6 +25,10 @@ export const config = {
   // Cifra as chaves WAHA guardadas na base de dados.
   secretKey: env('LOSAMBO_SECRET_KEY', 'dev-only-secret-change-me'),
   publicApiUrl: env('PUBLIC_API_URL', 'http://localhost:4000/v1'),
+  // Entrar com WhatsApp: sessão WAHA que envia os códigos (por omissão, um número Losambo ligado).
+  whatsappAuth: {
+    session: env('WHATSAPP_AUTH_SESSION'),
+  },
   // Entrar com Google (OAuth 2.0 / OpenID Connect). Sem ID e segredo, o botão fica desligado.
   google: {
     clientId: env('GOOGLE_CLIENT_ID'),

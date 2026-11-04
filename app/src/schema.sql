@@ -140,3 +140,21 @@ ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT UNIQUE;
 
 CREATE INDEX IF NOT EXISTS messages_route_idx ON messages (number_id, chat_id, created_at DESC);
+
+-- Entrar / criar conta com WhatsApp
+ALTER TABLE users ALTER COLUMN email DROP NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone TEXT UNIQUE;
+CREATE TABLE IF NOT EXISTS auth_codes (
+  id TEXT PRIMARY KEY,
+  phone TEXT NOT NULL,
+  purpose TEXT NOT NULL,
+  payload JSONB,
+  code_hash TEXT NOT NULL,
+  number_id INT REFERENCES numbers(id) ON DELETE SET NULL,
+  ip TEXT,
+  attempts INT NOT NULL DEFAULT 0,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS auth_codes_phone_idx ON auth_codes (phone, created_at);

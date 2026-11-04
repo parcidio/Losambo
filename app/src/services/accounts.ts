@@ -9,7 +9,8 @@ import { getTenant, uniqueSlug } from './tenants.js';
 export async function createAccount(input: {
   name: string;
   company: string;
-  email: string;
+  email: string | null;
+  phone?: string | null;
   passwordHash: string | null;
   googleSub?: string | null;
 }): Promise<{ userId: number; tenantId: number }> {
@@ -21,8 +22,16 @@ export async function createAccount(input: {
     const t = await client.query('INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id', [input.company, slug]);
     const first = await client.query('SELECT count(*)::int AS c FROM users');
     const u = await client.query(
-      `INSERT INTO users (tenant_id, name, email, password_hash, google_sub, is_admin) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [t.rows[0].id, input.name, input.email.toLowerCase(), input.passwordHash, input.googleSub ?? null, first.rows[0].c === 0],
+      `INSERT INTO users (tenant_id, name, email, phone, password_hash, google_sub, is_admin) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [
+        t.rows[0].id,
+        input.name,
+        input.email?.toLowerCase() ?? null,
+        input.phone ?? null,
+        input.passwordHash,
+        input.googleSub ?? null,
+        first.rows[0].c === 0,
+      ],
     );
     await client.query('COMMIT');
     ids = { userId: u.rows[0].id, tenantId: t.rows[0].id };
