@@ -63,6 +63,18 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
 Permissões das chaves: `read`, `send`, `control`, `settings`, `delete`.
 Webhooks enviados com `X-Losambo-Signature: sha256=<HMAC do corpo>`.
 
+## Entrar com Google
+
+1. Em https://console.cloud.google.com/apis/credentials crie um *OAuth client ID* do tipo
+   **Aplicação Web** (e configure o ecrã de consentimento, se ainda não existir).
+2. Em *URIs de redirecionamento autorizados* adicione `http://localhost:4000/auth/google/callback`
+   (e o equivalente em produção).
+3. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` no `.env` e reinicie.
+
+O botão "Continuar com Google" só aparece quando o Google está configurado. Quem entra pela primeira vez
+com o Google ganha uma conta (com os números Losambo por omissão); se já existir uma conta com o mesmo
+e-mail verificado, o Google fica ligado a essa conta.
+
 ## Números: Losambo vs. próprios
 
 - **Números Losambo** (sessões `lsb_NN`): ligados pelo super-admin em *Números Losambo* e partilhados

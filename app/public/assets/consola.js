@@ -447,7 +447,7 @@ async function viewOtp() {
       <button class="btn" type="submit">Enviar código</button></form>
       <div id="otp-res"></div>
     </section>
-    <section class="card" style="border:2px solid #0051C3"><h2>B · Verificação inversa <span class="pill info" style="margin-left:6px">Recomendado</span></h2>
+    <section class="card" style="border:2px solid #F6821F"><h2>B · Verificação inversa <span class="pill warn" style="margin-left:6px">Recomendado</span></h2>
       <p class="note info"><strong>Risco baixo:</strong> é tráfego de entrada; o número do remetente é provado pelo próprio WhatsApp.</p>
       <form id="otp-rev"><div class="f"><label for="r-to">Número esperado (opcional)</label><input id="r-to" name="to" inputmode="tel" placeholder="+2449XXXXXXXX"></div>
       <button class="btn" type="submit">Gerar link wa.me</button></form>

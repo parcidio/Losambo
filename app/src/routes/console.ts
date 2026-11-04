@@ -2,14 +2,13 @@ import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { endSession, requireAdmin, requireUser, startSession } from '../auth.js';
 import { ALL_EVENTS, config, PERMISSIONS, plans } from '../config.js';
-import { one, pool, query } from '../db.js';
+import { one, query } from '../db.js';
 import { ApiError, asyncHandler, parse } from '../http.js';
 import { hashPassword, sha256, token, verifyPassword } from '../security.js';
 import { createReverse, sendMessage, sendOtp, verifyOtp } from '../services/messaging.js';
 import {
   adminControl,
   assertCustomerNumber,
-  assignDefaultNumbers,
   clientFor,
   control,
   createNumber,
@@ -25,8 +24,10 @@ import {
   syncTenantKeys,
   updateSettings,
 } from '../services/numbers.js';
+import { createAccount } from '../services/accounts.js';
 import { setSubscription } from '../services/subscriptions.js';
-import { effectivePlan, getTenant, subscriptionActive, uniqueSlug } from '../services/tenants.js';
+import { googleEnabled } from './googleAuth.js';
+import { effectivePlan, getTenant, subscriptionActive } from '../services/tenants.js';
 import { emit, getEndpoint, rotateSecret, saveEndpoint } from '../services/webhooks.js';
 import { phoneDigits, wahaAdmin } from '../waha.js';
 import { wahaKey, wahaKeySource } from '../wahaKey.js';
@@ -62,43 +63,32 @@ consoleApi.post(
     if (await one('SELECT 1 FROM users WHERE email = $1', [email])) {
       throw new ApiError(409, 'email_taken', 'Já existe uma conta com este e-mail.');
     }
-    const client = await pool.connect();
-    try {
-      await client.query('BEGIN');
-      const slug = await uniqueSlug(body.company);
-      const t = await client.query('INSERT INTO tenants (name, slug) VALUES ($1, $2) RETURNING id', [body.company, slug]);
-      const first = await client.query('SELECT count(*)::int AS c FROM users');
-      const u = await client.query(
-        'INSERT INTO users (tenant_id, name, email, password_hash, is_admin) VALUES ($1,$2,$3,$4,$5) RETURNING id',
-        [t.rows[0].id, body.name, email, await hashPassword(body.password), first.rows[0].c === 0],
-      );
-      await client.query('COMMIT');
-      // Cada conta nova recebe os números Losambo por omissão, com uma chave WAHA própria para cada.
-      // Falhas na criação da chave ficam registadas; o admin repete em "Criar / sincronizar chaves".
-      try {
-        await assignDefaultNumbers(await getTenant(t.rows[0].id));
-      } catch (err) {
-        console.error('Atribuição de números no registo falhou (o admin pode repetir):', (err as Error).message);
-      }
-      await startSession(res, u.rows[0].id);
-      res.status(201).json({ ok: true });
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    const { userId } = await createAccount({
+      name: body.name,
+      company: body.company,
+      email: email,
+      passwordHash: await hashPassword(body.password),
+    });
+    await startSession(res, userId);
+    res.status(201).json({ ok: true });
   }),
 );
+
+consoleApi.get('/auth/providers', (_req, res) => {
+  res.json({ google: googleEnabled() });
+});
 
 consoleApi.post(
   '/auth/login',
   asyncHandler(async (req, res) => {
     const body = parse(z.object({ email: z.string().email(), password: z.string().min(1) }), req.body);
-    const u = await one<{ id: number; password_hash: string }>('SELECT id, password_hash FROM users WHERE email = $1', [
+    const u = await one<{ id: number; password_hash: string | null }>('SELECT id, password_hash FROM users WHERE email = $1', [
       body.email.toLowerCase(),
     ]);
-    if (!u || !(await verifyPassword(body.password, u.password_hash))) {
+    if (u && !u.password_hash) {
+      throw new ApiError(401, 'google_account', 'Esta conta entra com o Google. Use “Continuar com Google”.');
+    }
+    if (!u || !(await verifyPassword(body.password, u.password_hash!))) {
       throw new ApiError(401, 'invalid_credentials', 'E-mail ou palavra-passe errados.');
     }
     await startSession(res, u.id);

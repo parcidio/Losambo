@@ -135,4 +135,8 @@ CREATE TABLE IF NOT EXISTS number_assignments (
   PRIMARY KEY (number_id, tenant_id)
 );
 CREATE INDEX IF NOT EXISTS number_assignments_tenant_idx ON number_assignments (tenant_id);
+-- Entrar com Google: contas só-Google não têm palavra-passe.
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS google_sub TEXT UNIQUE;
+
 CREATE INDEX IF NOT EXISTS messages_route_idx ON messages (number_id, chat_id, created_at DESC);

@@ -6,6 +6,7 @@ import { migrate } from './db.js';
 import { errorHandler } from './http.js';
 import { consoleApi } from './routes/console.js';
 import { publicApi } from './routes/public.js';
+import { googleAuth } from './routes/googleAuth.js';
 import { wahaHook } from './routes/wahaHook.js';
 import { startSubscriptionSweeper } from './services/subscriptions.js';
 import { loadWahaKey, wahaKeySource } from './wahaKey.js';
@@ -16,6 +17,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
 app.use(wahaHook);
+app.use(googleAuth);
 app.use('/v1', publicApi);
 app.use('/console-api', consoleApi);
 
