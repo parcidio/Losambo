@@ -1,0 +1,90 @@
+# Produção (Coolify): Losambo + WAHA + PostgreSQL na mesma stack.
+# - Só o serviço "losambo" precisa de domínio (ex.: https://message.beeznoo.ao).
+# - O WAHA fica na rede interna: a Losambo fala com http://waha:3000 e o WAHA chama http://losambo:4000.
+# - O PostgreSQL guarda a Losambo (base "losambo") e as sessões WhatsApp do WAHA (bases "waha_…").
+# Defina as variáveis ${…} no Coolify (Environment Variables).
+# POSTGRES_PASSWORD e WAHA_DB_PASSWORD: só letras e números (o WAHA não descodifica caracteres especiais no URL).
+# O WAHA usa o utilizador "waha" (criado no 1.º arranque por docker/postgres-init), sem acesso à base "losambo".
+
+services:
+  losambo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "4000"
+    environment:
+      PORT: "4000"
+      TRUST_PROXY: "1"
+      DATABASE_URL: postgres://losambo:${POSTGRES_PASSWORD:?}@postgres:5432/losambo
+      DATABASE_SSL: "false"
+      WAHA_URL: http://waha:3000
+      WAHA_USE_CUSTOM_API_KEY: "true"
+      WAHA_API_KEY: ${WAHA_API_KEY:?}
+      WAHA_WEBHOOK_BASE: http://losambo:4000
+      WAHA_WEBHOOK_TOKEN: ${WAHA_WEBHOOK_TOKEN:?}
+      LOSAMBO_SECRET_KEY: ${LOSAMBO_SECRET_KEY:?}
+      PUBLIC_API_URL: ${PUBLIC_URL:?}/v1
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${PUBLIC_URL:?}/auth/google/callback
+      WHATSAPP_AUTH_SESSION: ${WHATSAPP_AUTH_SESSION:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      waha:
+        condition: service_started
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+  waha:
+    # Fixe uma versão testada em WAHA_IMAGE (ex.: devlikeapro/waha:<versão>) para atualizações controladas.
+    image: ${WAHA_IMAGE:-devlikeapro/waha:latest}
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      WAHA_API_KEY: ${WAHA_API_KEY:?}
+      WHATSAPP_DEFAULT_ENGINE: GOWS
+      WHATSAPP_SESSIONS_POSTGRESQL_URL: postgres://waha:${WAHA_DB_PASSWORD:?}@postgres:5432/postgres?sslmode=disable
+      WAHA_PRINT_QR: "false"
+      WAHA_LOG_FORMAT: JSON
+      WAHA_LOG_LEVEL: info
+      # Só a Losambo fala com o WAHA (rede interna): sem painel nem Swagger.
+      WAHA_DASHBOARD_ENABLED: "false"
+      WHATSAPP_SWAGGER_ENABLED: "false"
+    volumes:
+      - waha-media:/app/.media
+    depends_on:
+      postgres:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: losambo
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: losambo
+      WAHA_DB_PASSWORD: ${WAHA_DB_PASSWORD:?}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U losambo -d losambo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres-data:
+  waha-media:

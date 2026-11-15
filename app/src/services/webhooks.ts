@@ -1,3 +1,4 @@
+import { safeRequest } from '../net.js';
 import { one, query } from '../db.js';
 import { hmacSignature, token } from '../security.js';
 
@@ -47,7 +48,7 @@ function backoff(ep: WebhookEndpoint, attempt: number): number {
 async function deliver(ep: WebhookEndpoint, eventId: number, body: string, attempt: number): Promise<void> {
   let result: string;
   try {
-    const res = await fetch(ep.url, {
+    const res = await safeRequest(ep.url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -56,10 +57,11 @@ async function deliver(ep: WebhookEndpoint, eventId: number, body: string, attem
         'X-Losambo-Event-Id': String(eventId),
       },
       body,
-      signal: AbortSignal.timeout(10_000),
+      timeoutMs: 10_000,
+      maxBytes: 64 * 1024,
     });
     result = `${res.status}`;
-    if (res.ok) {
+    if (res.status >= 200 && res.status < 300) {
       await query('UPDATE events SET delivery = $2 WHERE id = $1', [eventId, `entregue · ${result}`]);
       return;
     }

@@ -13,6 +13,14 @@ import { loadWahaKey, wahaKeySource } from './wahaKey.js';
 
 const app = express();
 app.disable('x-powered-by');
+if (config.trustProxy > 0) app.set('trust proxy', config.trustProxy);
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (config.secureCookies) res.setHeader('Strict-Transport-Security', 'max-age=31536000');
+  next();
+});
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
@@ -26,6 +34,17 @@ app.use(express.static(pub, { extensions: ['html'] }));
 app.get('/consola*', (_req, res) => res.sendFile(`${pub}/consola.html`));
 
 app.use(errorHandler);
+
+if (process.env.NODE_ENV === 'production') {
+  const weak = [
+    ['LOSAMBO_SECRET_KEY', config.secretKey === 'dev-only-secret-change-me' || config.secretKey.length < 16],
+    ['WAHA_WEBHOOK_TOKEN', config.waha.webhookToken === 'dev-token-change-me' || config.waha.webhookToken.length < 12],
+  ].filter(([, bad]) => bad);
+  if (weak.length) {
+    console.error(`Recusado: defina valores aleatórios fortes para ${weak.map(([n]) => n).join(', ')}.`);
+    process.exit(1);
+  }
+}
 
 await migrate();
 try {

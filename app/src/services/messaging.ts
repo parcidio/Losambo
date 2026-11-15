@@ -1,3 +1,4 @@
+import { downloadFile } from '../net.js';
 import { config } from '../config.js';
 import { one, query } from '../db.js';
 import { ApiError } from '../http.js';
@@ -68,9 +69,19 @@ export async function sendMessage(tenantId: number, input: SendMessageInput, all
   const waha = await clientFor(n);
   const chatId = await ensureOnWhatsApp(waha, n, input.to);
   const text = input.type === 'text' ? input.text ?? '' : input.caption ?? null;
+  // O ficheiro é descarregado pela Losambo (com proteção SSRF) e entregue ao WAHA em base64:
+  // o WAHA, dentro da rede interna, nunca vai buscar URLs indicados pelo cliente.
+  const file =
+    input.type === 'text' || !input.file
+      ? null
+      : await downloadFile(input.file.url).then((f) => ({
+          ...f,
+          mimetype: input.file!.mimetype ?? f.mimetype,
+          filename: input.file!.filename ?? f.filename,
+        }));
   const res = await pacedSend(n, waha, chatId, text, () => {
-    if (input.type === 'image') return waha.sendImage(n.session_name, chatId, input.file!, input.caption);
-    if (input.type === 'file') return waha.sendFile(n.session_name, chatId, input.file!, input.caption);
+    if (input.type === 'image') return waha.sendImage(n.session_name, chatId, file!, input.caption);
+    if (input.type === 'file') return waha.sendFile(n.session_name, chatId, file!, input.caption);
     return waha.sendText(n.session_name, chatId, input.text ?? '');
   });
   const id = await recordOut(tenantId, n, chatId, input.type, text, res);

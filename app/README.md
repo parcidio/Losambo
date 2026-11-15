@@ -29,6 +29,38 @@ Abrir http://localhost:4000. A primeira conta criada fica super-admin (vê "Cont
 Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-local-2026`):
 `teste@losambo.test` (super-admin) e `teste2@losambo.test`.
 
+## Produção no Coolify (Losambo + WAHA + PostgreSQL)
+
+`docker-compose.prod.yml` põe tudo numa só stack, com o PostgreSQL local (sem Supabase):
+
+| Serviço | Para quê | Domínio |
+|---|---|---|
+| `losambo` | consola, API `/v1`, webhooks do WAHA | sim, ex.: `https://message.beeznoo.ao` → porta 4000 |
+| `waha` | motor WhatsApp (GOWS), sessões guardadas no PostgreSQL | não (só rede interna) |
+| `postgres` | base `losambo` + bases `waha_…` das sessões | não |
+
+1. **New Resource → Docker Compose** (a partir do repositório GitHub, ramo `main`).
+2. **Base Directory**: `/app` · **Docker Compose Location**: `/docker-compose.prod.yml`.
+   (O `docker-compose.yml` é só para desenvolvimento e tem apenas o PostgreSQL — daí o erro
+   "No non-database services found".)
+3. Em **Environment Variables**:
+
+   | Variável | Valor |
+   |---|---|
+   | `POSTGRES_PASSWORD` | aleatório, **só letras e números** |
+   | `WAHA_DB_PASSWORD` | aleatório, **só letras e números** (utilizador `waha`, sem acesso à base da Losambo) |
+   | `WAHA_API_KEY` | aleatório (chave admin do WAHA) |
+   | `WAHA_WEBHOOK_TOKEN` | aleatório |
+   | `LOSAMBO_SECRET_KEY` | aleatório, longo (cifra as chaves WAHA das contas — não mude depois) |
+   | `PUBLIC_URL` | `https://message.beeznoo.ao` (sem `/` no fim) |
+   | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | opcional |
+   | `WHATSAPP_AUTH_SESSION` | opcional (número Losambo que envia os códigos de entrada) |
+
+4. No serviço **losambo**, defina o domínio `https://message.beeznoo.ao:4000`
+   (o `:4000` diz ao Coolify a porta interna; o site fica em `https://message.beeznoo.ao`). Deploy.
+
+A primeira conta criada fica super-admin. Os dados ficam nos volumes `postgres-data` e `waha-media`.
+
 ## Páginas
 
 | Rota | Ecrã do design |

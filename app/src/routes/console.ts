@@ -1,3 +1,4 @@
+import { assertSafeUrl } from '../net.js';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
 import { endSession, requireAdmin, requireUser, startSession } from '../auth.js';
@@ -382,6 +383,7 @@ consoleApi.put(
       }),
       req.body,
     );
+    assertSafeUrl(body.url);
     const ep = await saveEndpoint(tid(req), body);
     res.json({ ...ep, secret: undefined });
   }),

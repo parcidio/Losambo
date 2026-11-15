@@ -12,6 +12,9 @@ function optionalInt(name: string): number | null {
 export const config = {
   port: Number.parseInt(env('PORT', '4000'), 10),
   databaseUrl: env('DATABASE_URL', 'postgres://losambo:losambo@localhost:5433/losambo'),
+  // DATABASE_SSL: true para bases geridas (Supabase…), false para o PostgreSQL da própria stack; vazio = segue o sslmode do URL.
+  databaseSsl: ((v) => (v === '' ? undefined : ['1', 'true', 'yes', 'on'].includes(v)))(env('DATABASE_SSL').toLowerCase()),
+  databasePoolMax: Number.parseInt(env('DATABASE_POOL_MAX', '10'), 10),
   waha: {
     url: env('WAHA_URL', 'http://localhost:3000').replace(/\/$/, ''),
     // true + WAHA_API_KEY preenchido → usa a chave fixa; senão usa a chave que o WAHA gera em cada arranque.
@@ -24,6 +27,11 @@ export const config = {
   },
   // Cifra as chaves WAHA guardadas na base de dados.
   secretKey: env('LOSAMBO_SECRET_KEY', 'dev-only-secret-change-me'),
+  // Atrás do proxy do Coolify (HTTPS): cookies "Secure" e IP real do cliente (X-Forwarded-For).
+  secureCookies: env('PUBLIC_API_URL', '').startsWith('https://'),
+  trustProxy: Number.parseInt(env('TRUST_PROXY', '0'), 10),
+  // Só em desenvolvimento: deixa webhooks e ficheiros apontar para localhost/redes privadas.
+  allowPrivateUrls: ['1', 'true', 'yes', 'on'].includes(env('ALLOW_PRIVATE_URLS', 'false').toLowerCase()),
   publicApiUrl: env('PUBLIC_API_URL', 'http://localhost:4000/v1'),
   // Entrar com WhatsApp: sessão WAHA que envia os códigos (por omissão, um número Losambo ligado).
   whatsappAuth: {

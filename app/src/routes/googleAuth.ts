@@ -31,6 +31,7 @@ googleAuth.get('/auth/google', (_req, res) => {
   const challenge = createHash('sha256').update(verifier).digest('base64url');
   res.cookie(COOKIE, JSON.stringify({ state: state, verifier: verifier }), {
     httpOnly: true,
+    secure: config.secureCookies,
     sameSite: 'lax',
     maxAge: 10 * 60 * 1000,
     path: '/auth/google',
@@ -91,11 +92,13 @@ googleAuth.get(
     const email = info.email.toLowerCase();
     let user = await one<{ id: number }>('SELECT id FROM users WHERE google_sub = $1', [info.sub]);
     if (!user) {
-      // Mesmo e-mail (verificado pelo Google) numa conta existente → liga o Google a essa conta.
-      user = await one<{ id: number }>('UPDATE users SET google_sub = $2 WHERE email = $1 AND google_sub IS NULL RETURNING id', [
-        email,
-        info.sub,
-      ]);
+      // Mesmo e-mail numa conta sem palavra-passe → liga o Google a essa conta.
+      // Contas com palavra-passe não são ligadas: o e-mail delas nunca foi verificado, e quem a criou
+      // (talvez outra pessoa, com o e-mail da vítima) continuaria a entrar com a palavra-passe.
+      user = await one<{ id: number }>(
+        'UPDATE users SET google_sub = $2 WHERE email = $1 AND google_sub IS NULL AND password_hash IS NULL RETURNING id',
+        [email, info.sub],
+      );
     }
     if (!user) {
       if (await one('SELECT 1 FROM users WHERE email = $1', [email])) return fail(res, 'google_conflito');

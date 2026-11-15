@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import type { Permission } from './config.js';
+import { config, type Permission } from './config.js';
 import { one, query } from './db.js';
 import { ApiError, asyncHandler } from './http.js';
 import { sha256, token } from './security.js';
@@ -39,7 +39,7 @@ export async function startSession(res: Response, userId: number): Promise<void>
     sha256(t),
     userId,
   ]);
-  res.cookie(COOKIE, t, { httpOnly: true, sameSite: 'lax', maxAge: SESSION_DAYS * 86400_000, path: '/' });
+  res.cookie(COOKIE, t, { httpOnly: true, secure: config.secureCookies, sameSite: 'lax', maxAge: SESSION_DAYS * 86400_000, path: '/' });
 }
 
 export async function endSession(req: Request, res: Response): Promise<void> {

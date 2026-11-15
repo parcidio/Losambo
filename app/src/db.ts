@@ -2,7 +2,12 @@ import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 import { config } from './config.js';
 
-export const pool = new pg.Pool({ connectionString: config.databaseUrl });
+// SSL: DATABASE_SSL=true para bases geridas (Supabase…), false para o PostgreSQL da stack; vazio = sslmode do URL.
+export const pool = new pg.Pool({
+  connectionString: config.databaseUrl,
+  max: config.databasePoolMax,
+  ssl: config.databaseSsl === undefined ? undefined : config.databaseSsl ? { rejectUnauthorized: false } : false,
+});
 
 export async function query<T extends pg.QueryResultRow = any>(text: string, params: unknown[] = []): Promise<T[]> {
   const res = await pool.query<T>(text, params);

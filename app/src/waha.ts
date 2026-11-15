@@ -54,6 +54,13 @@ const KEY_ACTIONS: Record<KeyScope, Record<string, boolean>> = {
   platform: { read: true, send: true, control: false, setting: false, app: false, delete: false },
 };
 
+/** Ficheiro enviado ao WAHA sempre em base64 (nunca por URL — ver net.ts). */
+export interface WahaFile {
+  data: string;
+  mimetype: string;
+  filename: string;
+}
+
 const enc = encodeURIComponent;
 
 function makeClient(apiKey: string | (() => string), isAdmin = false) {
@@ -124,9 +131,9 @@ function makeClient(apiKey: string | (() => string), isAdmin = false) {
     sendSeen: (s: string, chatId: string) => json('POST', '/api/sendSeen', { session: s, chatId }),
     sendText: (s: string, chatId: string, text: string) =>
       json<{ id?: string | { _serialized?: string } }>('POST', '/api/sendText', { session: s, chatId, text }),
-    sendImage: (s: string, chatId: string, file: { url: string; mimetype?: string; filename?: string }, caption?: string) =>
+    sendImage: (s: string, chatId: string, file: WahaFile, caption?: string) =>
       json<{ id?: string }>('POST', '/api/sendImage', { session: s, chatId, file, caption }),
-    sendFile: (s: string, chatId: string, file: { url: string; mimetype?: string; filename?: string }, caption?: string) =>
+    sendFile: (s: string, chatId: string, file: WahaFile, caption?: string) =>
       json<{ id?: string }>('POST', '/api/sendFile', { session: s, chatId, file, caption }),
 
     // Só com a chave admin (provisionamento)
