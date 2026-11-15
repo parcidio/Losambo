@@ -31,7 +31,7 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
 
 ## Produção no Coolify (Losambo + WAHA + PostgreSQL)
 
-`docker-compose.prod.yml` põe tudo numa só stack, com o PostgreSQL local (sem Supabase):
+`docker-compose.yml` põe tudo numa só stack, com o PostgreSQL local (sem Supabase):
 
 | Serviço | Para quê | Domínio |
 |---|---|---|
@@ -40,9 +40,8 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
 | `postgres` | base `losambo` + bases `waha_…` das sessões | não |
 
 1. **New Resource → Docker Compose** (a partir do repositório GitHub, ramo `main`).
-2. **Base Directory**: `/app` · **Docker Compose Location**: `/docker-compose.prod.yml`.
-   (O `docker-compose.yml` é só para desenvolvimento e tem apenas o PostgreSQL — daí o erro
-   "No non-database services found".)
+2. **Base Directory**: `/app` · **Docker Compose Location**: `/docker-compose.yml`.
+   (O `docker-compose.dev.yml` é só para desenvolvimento e tem apenas o PostgreSQL.)
 3. Em **Environment Variables**:
 
    | Variável | Valor |

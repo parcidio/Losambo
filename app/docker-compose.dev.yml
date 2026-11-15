@@ -1,0 +1,17 @@
+# Só para desenvolvimento local: PostgreSQL na porta 5433 (npm run db:up). Produção: docker-compose.yml.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: losambo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: losambo
+      POSTGRES_PASSWORD: losambo
+      POSTGRES_DB: losambo
+    ports:
+      - "5433:5432"
+    volumes:
+      - losambo-pg:/var/lib/postgresql/data
+
+volumes:
+  losambo-pg:
