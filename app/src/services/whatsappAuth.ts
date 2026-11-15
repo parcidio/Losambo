@@ -15,9 +15,9 @@ import { pacedSend } from './pacing.js';
 
 export type AuthPurpose = 'login' | 'signup';
 
-const RESEND_SECONDS = 60;
-const MAX_PER_PHONE_HOUR = 5;
-const MAX_PER_IP_HOUR = 20;
+const RESEND_SECONDS = config.whatsappAuth.resendSeconds;
+const MAX_PER_PHONE_HOUR = config.whatsappAuth.maxPerPhonePerHour;
+const MAX_PER_IP_HOUR = config.whatsappAuth.maxPerIpPerHour;
 
 /** Só dígitos, com indicativo. Um número angolano de 9 dígitos (9XXXXXXXX) ganha o 244. */
 export function normalizePhone(input: string): string {
@@ -34,12 +34,15 @@ export function maskPhone(d: string): string {
   return `+${d.slice(0, d.length - 9)} ••• ••• ${d.slice(-3)}`;
 }
 
-/** Número Losambo ligado (WORKING) para enviar os códigos: o definido em WHATSAPP_AUTH_SESSION ou um número Losambo, por omissão primeiro. */
+/**
+ * Número Losambo ligado (WORKING) que envia os códigos de entrada: o de WHATSAPP_AUTH_SESSION ou,
+ * de preferência, um número Losambo sem dono (os números das contas são só delas).
+ */
 async function senderNumber(): Promise<NumberRow> {
   const preferred = config.whatsappAuth.session;
   const rows = await query<NumberRow>(
     `SELECT * FROM numbers WHERE ownership = 'platform' ${preferred ? 'AND session_name = $1' : ''}
-     ORDER BY is_default DESC, (status = 'WORKING') DESC, id`,
+     ORDER BY EXISTS (SELECT 1 FROM number_assignments a WHERE a.number_id = numbers.id), (status = 'WORKING') DESC, id`,
     preferred ? [preferred] : [],
   );
   for (const n of rows) {

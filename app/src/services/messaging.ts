@@ -95,7 +95,7 @@ function otpText(app: string | null | undefined, code: string): string {
 
 export async function createReverse(tenantId: number, input: { to?: string | null; app?: string | null; via?: string | null }, allowed?: number[] | null) {
   const n = await pickNumber(tenantId, input.via, allowed);
-  // Num número partilhado o código identifica a conta: não pode repetir-se entre pedidos pendentes.
+  // O código não pode repetir-se entre pedidos pendentes no mesmo número.
   let text = '';
   for (let i = 0; i < 10; i++) {
     text = `${REVERSE_PREFIX}${otpCode()}`;
@@ -196,7 +196,7 @@ export async function verifyOtp(tenantId: number, input: { id: string; code: str
 /** Chamado pelo webhook de entrada: confirma verificação inversa se a mensagem trouxer um código válido. */
 /**
  * Chamado pelo webhook de entrada: se a mensagem trouxer um código pendente deste número,
- * confirma a verificação inversa. Num número partilhado o código identifica a conta.
+ * confirma a verificação inversa.
  * Devolve a conta dona do código, ou null.
  */
 export async function handleReverseInbound(n: NumberRow, from: string, body: string): Promise<number | null> {

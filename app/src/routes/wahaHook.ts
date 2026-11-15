@@ -4,25 +4,16 @@ import { one, query } from '../db.js';
 import { asyncHandler } from '../http.js';
 import { safeEqual } from '../security.js';
 import { handleReverseInbound } from '../services/messaging.js';
-import { applySession, findBySession, tenantsOf, type NumberRow } from '../services/numbers.js';
+import { applySession, findBySession, platformOwner, tenantsOf, type NumberRow } from '../services/numbers.js';
 import { emit } from '../services/webhooks.js';
 
 /** Recebe os eventos do WAHA (rede interna) e entrega-os à conta certa. */
 export const wahaHook = Router();
 
-/**
- * Num número próprio, a conta é a dona. Num número Losambo partilhado, é a conta que
- * falou por último com este contacto através deste número.
- */
-async function routeByChat(n: NumberRow, chatId: string | undefined): Promise<number | null> {
+/** A conta dona do número: o cliente, num número próprio; a única conta a que o número Losambo está atribuído. */
+async function routeByChat(n: NumberRow, _chatId?: string): Promise<number | null> {
   if (n.ownership === 'customer') return n.tenant_id;
-  if (!chatId) return null;
-  const row = await one<{ tenant_id: number }>(
-    `SELECT m.tenant_id FROM messages m JOIN number_assignments a ON a.number_id = m.number_id AND a.tenant_id = m.tenant_id
-     WHERE m.number_id = $1 AND m.chat_id = $2 AND m.direction = 'out' ORDER BY m.created_at DESC LIMIT 1`,
-    [n.id, chatId],
-  );
-  return row?.tenant_id ?? null;
+  return platformOwner(n.id);
 }
 
 wahaHook.post(

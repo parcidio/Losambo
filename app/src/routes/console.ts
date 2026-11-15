@@ -559,7 +559,7 @@ consoleApi.post(
   }),
 );
 
-// Números Losambo (da plataforma) — partilhados pelas contas a que forem atribuídos
+// Números Losambo (da plataforma) — cada um atribuído a uma só conta
 
 async function platformNumber(id: string) {
   const n = await getNumberRow(id);

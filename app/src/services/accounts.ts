@@ -4,7 +4,7 @@ import { getTenant, uniqueSlug } from './tenants.js';
 
 /**
  * Cria a conta (empresa) e o seu primeiro utilizador. O primeiro utilizador da plataforma fica super-admin.
- * Depois atribui os números Losambo por omissão, com uma chave WAHA própria para cada.
+ * Depois atribui-lhe um número Losambo livre, com uma chave WAHA própria.
  */
 export async function createAccount(input: {
   name: string;

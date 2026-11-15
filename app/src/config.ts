@@ -2,11 +2,24 @@ function env(name: string, fallback = ''): string {
   return process.env[name]?.trim() || fallback;
 }
 
-function optionalInt(name: string): number | null {
-  const v = env(name);
-  if (!v) return null;
+function boolEnv(name: string, fallback: boolean): boolean {
+  const v = env(name).toLowerCase();
+  if (!v) return fallback;
+  return ['1', 'true', 'yes', 'on', 'sim'].includes(v);
+}
+
+function intEnv(name: string, fallback: number): number {
+  const n = Number.parseInt(env(name), 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** Limite opcional: vazio → valor por omissão; "ilimitado"/"unlimited" → sem limite (null). */
+function limitEnv(name: string, fallback: number | null): number | null {
+  const v = env(name).toLowerCase();
+  if (!v) return fallback;
+  if (v === 'ilimitado' || v === 'unlimited' || v === 'none') return null;
   const n = Number.parseInt(v, 10);
-  return Number.isFinite(n) ? n : null;
+  return Number.isFinite(n) ? n : fallback;
 }
 
 export const config = {
@@ -36,6 +49,9 @@ export const config = {
   // Entrar com WhatsApp: sessão WAHA que envia os códigos (por omissão, um número Losambo ligado).
   whatsappAuth: {
     session: env('WHATSAPP_AUTH_SESSION'),
+    resendSeconds: intEnv('WHATSAPP_AUTH_RESEND_SECONDS', 60),
+    maxPerPhonePerHour: intEnv('WHATSAPP_AUTH_MAX_PER_PHONE_HOUR', 5),
+    maxPerIpPerHour: intEnv('WHATSAPP_AUTH_MAX_PER_IP_HOUR', 20),
   },
   // Entrar com Google (OAuth 2.0 / OpenID Connect). Sem ID e segredo, o botão fica desligado.
   google: {
@@ -44,9 +60,11 @@ export const config = {
     redirectUri: env('GOOGLE_REDIRECT_URI', `http://localhost:${env('PORT', '4000')}/auth/google/callback`),
   },
   otp: {
-    ttlSeconds: 300,
-    maxAttempts: 5,
+    ttlSeconds: intEnv('OTP_TTL_SECONDS', 300),
+    maxAttempts: intEnv('OTP_MAX_ATTEMPTS', 5),
   },
+  // Duração da sessão na consola (dias).
+  sessionDays: intEnv('SESSION_DAYS', 14),
 };
 
 export type PlanId = 'free' | 'startup' | 'business' | 'internal';
@@ -59,10 +77,30 @@ export const plans: Record<
   PlanId,
   { label: string; allowOwnNumbers: boolean; maxNumbers: number | null; monthlyMessages: number | null }
 > = {
-  free: { label: 'Grátis', allowOwnNumbers: false, maxNumbers: 0, monthlyMessages: optionalInt('PLAN_FREE_MONTHLY_MESSAGES') },
-  startup: { label: 'Startup', allowOwnNumbers: false, maxNumbers: 0, monthlyMessages: optionalInt('PLAN_STARTUP_MONTHLY_MESSAGES') },
-  business: { label: 'Negócio', allowOwnNumbers: true, maxNumbers: null, monthlyMessages: null },
-  internal: { label: 'Interno', allowOwnNumbers: true, maxNumbers: null, monthlyMessages: null },
+  free: {
+    label: env('PLAN_FREE_LABEL', 'Grátis'),
+    allowOwnNumbers: boolEnv('PLAN_FREE_ALLOW_OWN_NUMBERS', false),
+    maxNumbers: limitEnv('PLAN_FREE_MAX_OWN_NUMBERS', 0),
+    monthlyMessages: limitEnv('PLAN_FREE_MONTHLY_MESSAGES', 100),
+  },
+  startup: {
+    label: env('PLAN_STARTUP_LABEL', 'Startup'),
+    allowOwnNumbers: boolEnv('PLAN_STARTUP_ALLOW_OWN_NUMBERS', false),
+    maxNumbers: limitEnv('PLAN_STARTUP_MAX_OWN_NUMBERS', 0),
+    monthlyMessages: limitEnv('PLAN_STARTUP_MONTHLY_MESSAGES', 5000),
+  },
+  business: {
+    label: env('PLAN_BUSINESS_LABEL', 'Negócio'),
+    allowOwnNumbers: boolEnv('PLAN_BUSINESS_ALLOW_OWN_NUMBERS', true),
+    maxNumbers: limitEnv('PLAN_BUSINESS_MAX_OWN_NUMBERS', null),
+    monthlyMessages: limitEnv('PLAN_BUSINESS_MONTHLY_MESSAGES', null),
+  },
+  internal: {
+    label: env('PLAN_INTERNAL_LABEL', 'Interno'),
+    allowOwnNumbers: true,
+    maxNumbers: null,
+    monthlyMessages: null,
+  },
 };
 
 /** Prefixo das sessões WAHA dos números Losambo ('_' nunca aparece nos slugs das contas). */

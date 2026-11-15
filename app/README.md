@@ -59,7 +59,31 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
 4. No serviço **losambo**, defina o domínio `https://message.beeznoo.ao:4000`
    (o `:4000` diz ao Coolify a porta interna; o site fica em `https://message.beeznoo.ao`). Deploy.
 
-A primeira conta criada fica super-admin. Os dados ficam nos volumes `postgres-data` e `waha-media`.
+A primeira conta criada fica super-admin — crie a sua logo após o primeiro deploy.
+
+**Persistência:** contas, sessões de entrada, mensagens e as sessões WhatsApp do WAHA (ligações, chaves) ficam no
+PostgreSQL, no volume `postgres-data`; os ficheiros do WAHA no volume `waha-media`. Sobrevivem a reinícios,
+redeploys e atualizações. Depois de um reinício o WAHA volta a ligar sozinho todas as sessões guardadas
+(`WHATSAPP_RESTART_ALL_SESSIONS`, `WAHA_WORKER_ID` fixo). Não mude `LOSAMBO_SECRET_KEY` depois do primeiro deploy.
+
+**Outras variáveis** (todas com valores por omissão no compose; mude no Coolify se precisar):
+
+| Variável | Omissão | Para quê |
+|---|---|---|
+| `PLAN_FREE_MONTHLY_MESSAGES` | `100` | mensagens/mês no plano Grátis |
+| `PLAN_STARTUP_MONTHLY_MESSAGES` | `5000` | mensagens/mês no plano Startup |
+| `PLAN_BUSINESS_MONTHLY_MESSAGES` | `ilimitado` | mensagens/mês no plano Negócio |
+| `PLAN_*_ALLOW_OWN_NUMBERS` | Grátis/Startup `false`, Negócio `true` | pode ligar números próprios |
+| `PLAN_*_MAX_OWN_NUMBERS` | Grátis/Startup `0`, Negócio `ilimitado` | máximo de números próprios |
+| `PLAN_*_LABEL` | Grátis, Startup, Negócio, Interno | nome do plano na consola |
+| `OTP_TTL_SECONDS` / `OTP_MAX_ATTEMPTS` | `300` / `5` | validade e tentativas dos códigos |
+| `SESSION_DAYS` | `14` | duração da sessão na consola |
+| `WHATSAPP_AUTH_RESEND_SECONDS` | `60` | espera entre códigos de entrada |
+| `WHATSAPP_AUTH_MAX_PER_PHONE_HOUR` / `_PER_IP_HOUR` | `5` / `20` | limites dos códigos de entrada |
+| `DATABASE_POOL_MAX` | `10` | ligações à base de dados |
+| `WAHA_LOG_LEVEL` / `TZ` | `info` / `Africa/Luanda` | registos e fuso horário do WAHA |
+
+O plano Interno é sempre sem limites.
 
 ## Páginas
 
@@ -104,7 +128,7 @@ Webhooks enviados com `X-Losambo-Signature: sha256=<HMAC do corpo>`.
 3. Preencha `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `GOOGLE_REDIRECT_URI` no `.env` e reinicie.
 
 O botão "Continuar com Google" só aparece quando o Google está configurado. Quem entra pela primeira vez
-com o Google ganha uma conta (com os números Losambo por omissão); se já existir uma conta com o mesmo
+com o Google ganha uma conta (com um número Losambo livre); se já existir uma conta com o mesmo
 e-mail verificado, o Google fica ligado a essa conta.
 
 ## Entrar com WhatsApp
@@ -114,26 +138,27 @@ e-mail verificado, o Google fica ligado a essa conta.
 - **Criar conta** (`/entrar#criar-whatsapp`): nome, empresa e número → check-exists → código por WhatsApp →
   a conta só é criada depois de o código ser confirmado.
 - Os códigos saem de um número Losambo ligado (`WORKING`): o de `WHATSAPP_AUTH_SESSION`, ou o primeiro
-  número Losambo (os "por omissão" primeiro). Sem nenhum ligado, a opção responde
+  número Losambo sem conta (os números das contas são só delas). Sem nenhum ligado, a opção responde
   "indisponível" e mantém-se a entrada por e-mail.
 - Limites: 1 código por minuto e 5 por hora por número, 20 por hora por IP; 5 tentativas por código; expira em 5 minutos.
 - API da consola: `POST /console-api/auth/whatsapp/start` e `POST /console-api/auth/whatsapp/verify`.
 
 ## Números: Losambo vs. próprios
 
-- **Números Losambo** (sessões `lsb_NN`): ligados pelo super-admin em *Números Losambo* e partilhados
-  pelas contas a que forem atribuídos. Grátis e Startup **só** usam estes números.
-  Os marcados "Por omissão" são atribuídos automaticamente a cada conta nova.
+- **Números Losambo** (sessões `lsb_NN`): ligados pelo super-admin em *Números Losambo*. **Cada número
+  pertence a uma só conta** (índice único em `number_assignments.number_id`). Grátis e Startup **só** usam estes números.
+  Cada conta nova recebe automaticamente **um número livre** marcado "Para contas novas"; sem números livres,
+  a conta fica sem número até o admin lhe atribuir um. Ligue números de reserva para não faltarem.
 - **Números próprios** (sessões `<conta>-NN`, ligados pelo cliente por QR/código): só no plano
   **Negócio** (e Interno). Num downgrade, as chaves WAHA dos números próprios são desligadas.
 - As contas não controlam números Losambo (QR, parar, reiniciar, apagar, ritmo → `403 platform_number`).
-- Respostas recebidas num número partilhado vão para a conta que falou por último com esse contacto
-  por esse número; códigos `LSB-XXXXXX` da verificação inversa identificam a conta diretamente.
+- As respostas recebidas num número vão sempre para a conta dona desse número — nenhuma outra conta
+  as pode desviar.
 
 ## Chaves WAHA por conta e subscrição
 
 - Cada conta tem uma **chave WAHA própria por cada número que usa** (`POST /api/keys`, várias chaves
-  por sessão). É criada quando o número é atribuído — no registo, para os números Losambo por omissão.
+  por sessão). É criada quando o número é atribuído — no registo, para o número Losambo livre.
   Em números Losambo a chave só lê e envia; em números próprios também controla a sessão.
   A chave admin (`WAHA_API_KEY`) serve apenas para criar/apagar sessões e gerir chaves.
   As chaves das contas ficam cifradas (AES-256-GCM, `LOSAMBO_SECRET_KEY`).

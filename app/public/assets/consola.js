@@ -226,7 +226,7 @@ async function renderDetail(id) {
   box.innerHTML = `
   <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px">
     <h2 style="margin:0;font-size:22px;font-weight:600">${esc(n.session_name)} <span style="font-weight:400;color:#4E5255;font-size:16px">· ${esc(fmtPhone(n.phone))}</span> ${typeChip(n)}</h2>
-    ${platform ? '<p class="lead" style="margin:0">Número Losambo partilhado — ligação e ritmo geridos pela equipa Losambo.</p>' : `<div class="btns">
+    ${platform ? '<p class="lead" style="margin:0">Número Losambo dedicado a esta conta — ligação e ritmo geridos pela equipa Losambo.</p>' : `<div class="btns">
       ${n.status === 'STOPPED' || n.status === 'FAILED' ? `<button type="button" class="btn sec" data-act="start">Iniciar</button>` : ''}
       ${n.status === 'SCAN_QR_CODE' ? `<a class="btn sec" href="#/numeros/ligar/${n.id}">Ler QR</a>` : ''}
       <button type="button" class="btn sec" data-act="restart">Reiniciar</button>
@@ -322,7 +322,7 @@ async function viewLigar(id, admin = false) {
       <p class="lead" style="margin-bottom:16px">Com o plano Negócio pode ligar os números WhatsApp da sua empresa (por QR ou código), e as mensagens saem com o seu nome e número.</p>
       <ul class="steps"><li>Números próprios ilimitados</li><li>Controlo da sessão: ligar, parar, religar</li><li>Ritmo de envio configurável por número</li></ul>
       <a class="btn" href="mailto:[EMAIL DE CONTACTO]?subject=Plano%20Neg%C3%B3cio">Falar connosco</a></section>
-    <section class="card"><h2>O seu plano</h2><p class="lead">${esc(ME.tenant.plan_label)} · números Losambo partilhados</p></section></div></main>`;
+    <section class="card"><h2>O seu plano</h2><p class="lead">${esc(ME.tenant.plan_label)} · número Losambo dedicado</p></section></div></main>`;
     return;
   }
   if (!id) {
@@ -751,7 +751,11 @@ async function viewAdmin(tenantId) {
     const d = await api('GET', `/admin/tenants/${t.id}/numbers`).catch((e) => { toast(e.message, true); return null; });
     if (!d) return;
     const on = new Set(d.assigned);
-    $('#nf-list').innerHTML = d.platform.length ? d.platform.map((n) => `<label class="ev"><input type="checkbox" name="pn" value="${n.id}" ${on.has(n.id) ? 'checked' : ''}><span class="t"><code>${esc(n.session_name)}</code> ${esc(fmtPhone(n.phone))}</span>${statusPill(n.status)}<span class="chip">${n.accounts} conta(s)</span></label>`).join('')
+    $('#nf-list').innerHTML = d.platform.length ? d.platform.map((n) => {
+      const taken = n.owner_id !== null && n.owner_id !== t.id;
+      const who = n.owner_id === null ? '<span class="chip">Livre</span>' : taken ? `<span class="chip">De: ${esc(n.owner_name)}</span>` : '<span class="chip">Desta conta</span>';
+      return `<label class="ev"${taken ? ' style="opacity:.6"' : ''}><input type="checkbox" name="pn" value="${n.id}" ${on.has(n.id) ? 'checked' : ''} ${taken ? 'disabled' : ''}><span class="t"><code>${esc(n.session_name)}</code> ${esc(fmtPhone(n.phone))}</span>${statusPill(n.status)}${who}</label>`;
+    }).join('')
       : '<p class="note warn">Ainda não há números Losambo. <a href="#/admin-numeros">Ligue o primeiro</a>.</p>';
     $('#own-list').innerHTML = d.own.length ? `<div class="sep"></div><h3 style="margin:0 0 10px;font-size:16px">Números próprios</h3>${d.own.map((n) => `<p class="lead"><code>${esc(n.session_name)}</code> ${esc(fmtPhone(n.phone))} ${statusPill(n.status)}</p>`).join('')}` : '';
   }
@@ -795,7 +799,7 @@ async function viewAdmin(tenantId) {
   });
 }
 
-// Admin — números Losambo (partilhados)
+// Admin — números Losambo (cada um de uma só conta)
 
 async function viewAdminNumeros() {
   if (!ME.user.is_admin) {
@@ -806,12 +810,12 @@ async function viewAdminNumeros() {
   view.innerHTML = `<main>
   <div class="head"><div><h1 class="page">Números Losambo</h1><p class="lead">Os números que a Losambo fornece às contas. Cada conta a que atribuir um número recebe uma chave WAHA própria para ele.</p></div>
   <button type="button" class="btn" id="add">+ Ligar número Losambo</button></div>
-  <p class="note info">Contas Grátis e Startup só enviam por estes números. Os marcados como <strong>Por omissão</strong> são atribuídos automaticamente a cada conta nova.</p>
-  <div class="tablebox"><table style="min-width:860px"><thead><tr><th>Número</th><th>Sessão</th><th>Estado</th><th>Contas</th><th>Por omissão</th><th>Máx./min</th><th><span class="sr">Ações</span></th></tr></thead>
-  <tbody>${rows.length ? rows.map((n) => `<tr><td class="mono">${esc(fmtPhone(n.phone))}</td><td><code>${esc(n.session_name)}</code></td><td>${statusPill(n.status)}</td><td>${n.accounts}</td>
-    <td><input type="checkbox" data-def="${n.id}" ${n.is_default ? 'checked' : ''} aria-label="Atribuir ${esc(n.session_name)} a contas novas"></td>
+  <p class="note info">Cada número Losambo pertence a <strong>uma só conta</strong> — as respostas dos contactos vão sempre para essa conta. Contas Grátis e Startup só enviam por estes números. Cada conta nova recebe automaticamente um número livre marcado <strong>Para contas novas</strong>; números sem conta enviam os códigos de entrada com WhatsApp.</p>
+  <div class="tablebox"><table style="min-width:860px"><thead><tr><th>Número</th><th>Sessão</th><th>Estado</th><th>Conta</th><th>Para contas novas</th><th>Máx./min</th><th><span class="sr">Ações</span></th></tr></thead>
+  <tbody>${rows.length ? rows.map((n) => `<tr><td class="mono">${esc(fmtPhone(n.phone))}</td><td><code>${esc(n.session_name)}</code></td><td>${statusPill(n.status)}</td><td>${n.owner_name ? esc(n.owner_name) : '<span class="pill mute">Livre</span>'}</td>
+    <td><input type="checkbox" data-def="${n.id}" ${n.is_default ? 'checked' : ''} aria-label="Dar ${esc(n.session_name)} a uma conta nova"></td>
     <td><input class="in" type="number" min="1" max="60" style="width:80px;min-height:36px" data-rpm="${n.id}" value="${n.max_per_minute}" aria-label="Máximo por minuto"></td>
-    <td style="text-align:right;white-space:nowrap">${n.status === 'WORKING' ? '' : `<a class="btn sec" href="#/admin-numeros/ligar/${n.id}">Ligar</a> `}<button class="btn sec" type="button" data-act="restart" data-id="${n.id}">Reiniciar</button> <button class="btn danger" type="button" data-del="${n.id}" data-accounts="${n.accounts}">Apagar</button></td></tr>`).join('')
+    <td style="text-align:right;white-space:nowrap">${n.status === 'WORKING' ? '' : `<a class="btn sec" href="#/admin-numeros/ligar/${n.id}">Ligar</a> `}<button class="btn sec" type="button" data-act="restart" data-id="${n.id}">Reiniciar</button> <button class="btn danger" type="button" data-del="${n.id}" data-owner="${esc(n.owner_name || '')}">Apagar</button></td></tr>`).join('')
     : `<tr><td colspan="7" class="empty">Ainda não há números Losambo. Ligue o primeiro para as contas poderem enviar.</td></tr>`}</tbody></table></div></main>`;
   $('#add').addEventListener('click', (e) => busy(e.currentTarget, async () => {
     const n = await api('POST', '/admin/platform-numbers');
@@ -835,7 +839,7 @@ async function viewAdminNumeros() {
     setTimeout(viewAdminNumeros, 1200);
   })));
   $$('[data-del]').forEach((b) => b.addEventListener('click', () => busy(b, async () => {
-    if (!confirm(`Apagar este número? ${b.dataset.accounts} conta(s) deixam de o poder usar e as chaves WAHA delas são apagadas.`)) return;
+    if (!confirm(b.dataset.owner ? `Apagar este número? A conta ${b.dataset.owner} deixa de o poder usar e a chave WAHA dela é apagada.` : 'Apagar este número?')) return;
     await api('DELETE', `/admin/platform-numbers/${b.dataset.del}`);
     viewAdminNumeros();
   })));

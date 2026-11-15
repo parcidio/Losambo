@@ -15,21 +15,50 @@ services:
     expose:
       - "4000"
     environment:
+      # --- Servidor ---
       PORT: "4000"
       TRUST_PROXY: "1"
+      PUBLIC_API_URL: ${PUBLIC_URL:?}/v1
+      SESSION_DAYS: ${SESSION_DAYS:-14}
+      ALLOW_PRIVATE_URLS: "false"
+      # --- Base de dados (PostgreSQL da stack) ---
       DATABASE_URL: postgres://losambo:${POSTGRES_PASSWORD:?}@postgres:5432/losambo
       DATABASE_SSL: "false"
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      # --- Segredos ---
+      LOSAMBO_SECRET_KEY: ${LOSAMBO_SECRET_KEY:?}
+      # --- WAHA (rede interna) ---
       WAHA_URL: http://waha:3000
       WAHA_USE_CUSTOM_API_KEY: "true"
       WAHA_API_KEY: ${WAHA_API_KEY:?}
       WAHA_WEBHOOK_BASE: http://losambo:4000
       WAHA_WEBHOOK_TOKEN: ${WAHA_WEBHOOK_TOKEN:?}
-      LOSAMBO_SECRET_KEY: ${LOSAMBO_SECRET_KEY:?}
-      PUBLIC_API_URL: ${PUBLIC_URL:?}/v1
+      # --- OTP ---
+      OTP_TTL_SECONDS: ${OTP_TTL_SECONDS:-300}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-5}
+      # --- Tipos de conta (planos). Limites: número, ou "ilimitado". ---
+      PLAN_FREE_LABEL: ${PLAN_FREE_LABEL:-Grátis}
+      PLAN_FREE_MONTHLY_MESSAGES: ${PLAN_FREE_MONTHLY_MESSAGES:-100}
+      PLAN_FREE_ALLOW_OWN_NUMBERS: ${PLAN_FREE_ALLOW_OWN_NUMBERS:-false}
+      PLAN_FREE_MAX_OWN_NUMBERS: ${PLAN_FREE_MAX_OWN_NUMBERS:-0}
+      PLAN_STARTUP_LABEL: ${PLAN_STARTUP_LABEL:-Startup}
+      PLAN_STARTUP_MONTHLY_MESSAGES: ${PLAN_STARTUP_MONTHLY_MESSAGES:-5000}
+      PLAN_STARTUP_ALLOW_OWN_NUMBERS: ${PLAN_STARTUP_ALLOW_OWN_NUMBERS:-false}
+      PLAN_STARTUP_MAX_OWN_NUMBERS: ${PLAN_STARTUP_MAX_OWN_NUMBERS:-0}
+      PLAN_BUSINESS_LABEL: ${PLAN_BUSINESS_LABEL:-Negócio}
+      PLAN_BUSINESS_MONTHLY_MESSAGES: ${PLAN_BUSINESS_MONTHLY_MESSAGES:-ilimitado}
+      PLAN_BUSINESS_ALLOW_OWN_NUMBERS: ${PLAN_BUSINESS_ALLOW_OWN_NUMBERS:-true}
+      PLAN_BUSINESS_MAX_OWN_NUMBERS: ${PLAN_BUSINESS_MAX_OWN_NUMBERS:-ilimitado}
+      PLAN_INTERNAL_LABEL: ${PLAN_INTERNAL_LABEL:-Interno}
+      # --- Entrar com WhatsApp ---
+      WHATSAPP_AUTH_SESSION: ${WHATSAPP_AUTH_SESSION:-}
+      WHATSAPP_AUTH_RESEND_SECONDS: ${WHATSAPP_AUTH_RESEND_SECONDS:-60}
+      WHATSAPP_AUTH_MAX_PER_PHONE_HOUR: ${WHATSAPP_AUTH_MAX_PER_PHONE_HOUR:-5}
+      WHATSAPP_AUTH_MAX_PER_IP_HOUR: ${WHATSAPP_AUTH_MAX_PER_IP_HOUR:-20}
+      # --- Entrar com Google (opcional: vazio = botão escondido) ---
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${PUBLIC_URL:?}/auth/google/callback
-      WHATSAPP_AUTH_SESSION: ${WHATSAPP_AUTH_SESSION:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,8 +82,14 @@ services:
       WHATSAPP_DEFAULT_ENGINE: GOWS
       WHATSAPP_SESSIONS_POSTGRESQL_URL: postgres://waha:${WAHA_DB_PASSWORD:?}@postgres:5432/postgres?sslmode=disable
       WAHA_PRINT_QR: "false"
+      # Persistência: sessões, ligações WhatsApp e chaves ficam no PostgreSQL (volume postgres-data);
+      # depois de reinícios/redeploys o WAHA volta a ligar sozinho todas as sessões guardadas.
+      WAHA_WORKER_ID: losambo-waha
+      WHATSAPP_RESTART_ALL_SESSIONS: "true"
       WAHA_LOG_FORMAT: JSON
-      WAHA_LOG_LEVEL: info
+      WAHA_LOG_LEVEL: ${WAHA_LOG_LEVEL:-info}
+      WAHA_AUTO_START_DELAY_SECONDS: ${WAHA_AUTO_START_DELAY_SECONDS:-2}
+      TZ: ${TZ:-Africa/Luanda}
       # Só a Losambo fala com o WAHA (rede interna): sem painel nem Swagger.
       WAHA_DASHBOARD_ENABLED: "false"
       WHATSAPP_SWAGGER_ENABLED: "false"
@@ -85,6 +120,8 @@ services:
     security_opt:
       - no-new-privileges:true
 
+# Volumes nomeados: sobrevivem a reinícios, redeploys e atualizações de imagem.
+# (No Coolify só se perdem se apagar o recurso com "delete volumes".)
 volumes:
   postgres-data:
   waha-media:

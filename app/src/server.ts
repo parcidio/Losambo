@@ -3,6 +3,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { migrate } from './db.js';
+import { enforceSingleOwner } from './services/numbers.js';
 import { errorHandler } from './http.js';
 import { consoleApi } from './routes/console.js';
 import { publicApi } from './routes/public.js';
@@ -47,6 +48,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 await migrate();
+await enforceSingleOwner();
 try {
   await loadWahaKey();
   console.log(

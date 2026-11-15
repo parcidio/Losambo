@@ -93,7 +93,7 @@ function keyShouldBeActive(t: Tenant, n: NumberRow): boolean {
 
 export function assertCustomerNumber(n: NumberRow): void {
   if (n.ownership !== 'customer') {
-    throw new ApiError(403, 'platform_number', 'Este é um número Losambo partilhado; é gerido pela equipa Losambo.');
+    throw new ApiError(403, 'platform_number', 'Este é um número Losambo; a ligação é gerida pela equipa Losambo.');
   }
 }
 
@@ -122,8 +122,22 @@ export async function clientFor(n: TenantNumber, tenant?: Tenant): Promise<WahaC
   return wahaWithKey(await ensureKey(n, true));
 }
 
+/** Conta dona de um número Losambo (cada número Losambo pertence a uma só conta), ou null. */
+export async function platformOwner(numberId: number): Promise<number | null> {
+  const r = await one<{ tenant_id: number }>('SELECT tenant_id FROM number_assignments WHERE number_id = $1', [numberId]);
+  return r?.tenant_id ?? null;
+}
+
 async function assign(tenant: Tenant, n: NumberRow): Promise<TenantNumber> {
-  await query('INSERT INTO number_assignments (number_id, tenant_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [n.id, tenant.id]);
+  // Um número Losambo é de uma só conta: assim as respostas dos contactos nunca vão parar a outra conta.
+  await query('INSERT INTO number_assignments (number_id, tenant_id) VALUES ($1, $2) ON CONFLICT (number_id) DO NOTHING', [
+    n.id,
+    tenant.id,
+  ]);
+  const owner = await platformOwner(n.id);
+  if (owner !== tenant.id) {
+    throw new ApiError(409, 'number_taken', `O número ${n.session_name} já pertence a outra conta.`);
+  }
   const tn = await getNumber(tenant.id, n.id);
   try {
     await ensureKey(tn, keyShouldBeActive(tenant, n));
@@ -141,11 +155,27 @@ async function unassign(tenantId: number, numberId: number): Promise<void> {
   if (a?.waha_key_id) await wahaAdmin.deleteKey(a.waha_key_id).catch(() => undefined);
 }
 
-/** Dá a uma conta nova os números Losambo marcados como "por omissão" (cria a chave WAHA dela). */
+/**
+ * Dá a uma conta nova um número Losambo livre (marcado "Para contas novas" e sem dono), com a chave WAHA dela.
+ * Sem números livres, a conta fica sem número até o admin lhe atribuir um.
+ */
 export async function assignDefaultNumbers(tenant: Tenant): Promise<number> {
-  const defaults = await query<NumberRow>(`SELECT * FROM numbers WHERE ownership = 'platform' AND is_default ORDER BY id`);
-  for (const n of defaults) await assign(tenant, n);
-  return defaults.length;
+  const free = await query<NumberRow>(
+    `SELECT n.* FROM numbers n
+     WHERE n.ownership = 'platform' AND n.is_default
+       AND NOT EXISTS (SELECT 1 FROM number_assignments a WHERE a.number_id = n.id)
+     ORDER BY (n.status = 'WORKING') DESC, n.id`,
+  );
+  for (const n of free) {
+    try {
+      await assign(tenant, n);
+      return 1;
+    } catch (err) {
+      if (!(err instanceof ApiError && err.code === 'number_taken')) throw err; // apanhado por outra conta entretanto
+    }
+  }
+  console.warn(`Conta ${tenant.slug} criada sem número Losambo: não há números livres para contas novas.`);
+  return 0;
 }
 
 /** Define exatamente que números Losambo a conta pode usar. */
@@ -157,8 +187,13 @@ export async function setPlatformAssignments(tenantId: number, numberIds: number
   for (const id of wanted) {
     const n = await getNumberRow(id);
     if (n.ownership !== 'platform') throw new ApiError(400, 'not_platform_number', `${n.session_name} não é um número Losambo.`);
-    await assign(tenant, n);
+    const owner = await platformOwner(n.id);
+    if (owner !== null && owner !== tenantId) {
+      throw new ApiError(409, 'number_taken', `O número ${n.session_name} já pertence a outra conta.`);
+    }
   }
+  for (const n of current) if (!wanted.has(n.id)) await unassign(tenantId, n.id);
+  for (const id of wanted) await assign(tenant, await getNumberRow(id));
   return listNumbers(tenantId);
 }
 
@@ -181,12 +216,36 @@ export async function createPlatformNumber(): Promise<NumberRow> {
   ))!;
 }
 
-export async function listPlatformNumbers(): Promise<(NumberRow & { accounts: number })[]> {
+export async function listPlatformNumbers(): Promise<(NumberRow & { owner_id: number | null; owner_name: string | null })[]> {
   await listAllLive().catch(() => undefined);
   return query(
-    `SELECT n.*, (SELECT count(*)::int FROM number_assignments a WHERE a.number_id = n.id) AS accounts
-     FROM numbers n WHERE n.ownership = 'platform' ORDER BY n.id`,
+    `SELECT n.*, a.tenant_id AS owner_id, t.name AS owner_name
+     FROM numbers n
+     LEFT JOIN number_assignments a ON a.number_id = n.id
+     LEFT JOIN tenants t ON t.id = a.tenant_id
+     WHERE n.ownership = 'platform' ORDER BY n.id`,
   );
+}
+
+/**
+ * Migração para "um número Losambo por conta": se um número estava atribuído a várias contas,
+ * fica só com a primeira; as outras perdem-no e as chaves WAHA delas são apagadas.
+ * Depois impõe a regra na base de dados (índice único em number_id).
+ */
+export async function enforceSingleOwner(): Promise<void> {
+  const dropped = await query<{ number_id: number; tenant_id: number; waha_key_id: string | null }>(
+    `DELETE FROM number_assignments a USING (
+       SELECT number_id, tenant_id, row_number() OVER (PARTITION BY number_id ORDER BY created_at, tenant_id) AS rn
+       FROM number_assignments
+     ) d
+     WHERE a.number_id = d.number_id AND a.tenant_id = d.tenant_id AND d.rn > 1
+     RETURNING a.number_id, a.tenant_id, a.waha_key_id`,
+  );
+  for (const r of dropped) {
+    console.warn(`Número ${r.number_id} retirado da conta ${r.tenant_id} (um número Losambo por conta).`);
+    if (r.waha_key_id) await wahaAdmin.deleteKey(r.waha_key_id).catch(() => undefined);
+  }
+  await query('CREATE UNIQUE INDEX IF NOT EXISTS number_assignments_one_owner ON number_assignments (number_id)');
 }
 
 function phoneFromMe(me: WahaSession['me']): string | null {

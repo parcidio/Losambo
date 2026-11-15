@@ -31,13 +31,14 @@ declare global {
 }
 
 export const COOKIE = 'lsb_session';
-const SESSION_DAYS = 14;
+const SESSION_DAYS = config.sessionDays;
 
 export async function startSession(res: Response, userId: number): Promise<void> {
   const t = token(32);
-  await query(`INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + interval '${SESSION_DAYS} days')`, [
+  await query(`INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() + make_interval(days => $3))`, [
     sha256(t),
     userId,
+    SESSION_DAYS,
   ]);
   res.cookie(COOKIE, t, { httpOnly: true, secure: config.secureCookies, sameSite: 'lax', maxAge: SESSION_DAYS * 86400_000, path: '/' });
 }
