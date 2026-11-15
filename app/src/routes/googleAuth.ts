@@ -5,7 +5,8 @@ import { config } from '../config.js';
 import { one, query } from '../db.js';
 import { asyncHandler } from '../http.js';
 import { token } from '../security.js';
-import { createAccount } from '../services/accounts.js';
+import { createAccount, onEmailVerified } from '../services/accounts.js';
+import { consumeVerificationToken } from '../services/email.js';
 
 /** Entrar / criar conta com Google (OAuth 2.0 + OpenID Connect, fluxo "authorization code" com PKCE). */
 export const googleAuth = Router();
@@ -92,23 +93,51 @@ googleAuth.get(
     const email = info.email.toLowerCase();
     let user = await one<{ id: number }>('SELECT id FROM users WHERE google_sub = $1', [info.sub]);
     if (!user) {
-      // Mesmo e-mail numa conta sem palavra-passe → liga o Google a essa conta.
-      // Contas com palavra-passe não são ligadas: o e-mail delas nunca foi verificado, e quem a criou
-      // (talvez outra pessoa, com o e-mail da vítima) continuaria a entrar com a palavra-passe.
+      // Mesmo e-mail numa conta existente → liga o Google a essa conta, mas só se o e-mail dela já foi
+      // confirmado (ou se não tem palavra-passe). Uma conta por confirmar pode ter sido criada por outra
+      // pessoa com o e-mail da vítima: é apagada e a conta Google fica com o e-mail.
       user = await one<{ id: number }>(
-        'UPDATE users SET google_sub = $2 WHERE email = $1 AND google_sub IS NULL AND password_hash IS NULL RETURNING id',
+        `UPDATE users SET google_sub = $2, email_verified_at = COALESCE(email_verified_at, now())
+         WHERE email = $1 AND google_sub IS NULL AND (email_verified_at IS NOT NULL OR password_hash IS NULL) RETURNING id`,
         [email, info.sub],
       );
     }
     if (!user) {
-      if (await one('SELECT 1 FROM users WHERE email = $1', [email])) return fail(res, 'google_conflito');
+      const other = await one<{ tenant_id: number; email_verified_at: string | null; google_sub: string | null }>(
+        'SELECT tenant_id, email_verified_at, google_sub FROM users WHERE email = $1',
+        [email],
+      );
+      if (other && (other.email_verified_at || other.google_sub)) return fail(res, 'google_conflito');
+      if (other) await query('DELETE FROM tenants WHERE id = $1', [other.tenant_id]);
       const name = info.name?.trim() || email.split('@')[0];
-      const { userId } = await createAccount({ name: name, company: name, email: email, passwordHash: null, googleSub: info.sub });
+      const { userId } = await createAccount({
+        name: name,
+        company: name,
+        email: email,
+        passwordHash: null,
+        googleSub: info.sub,
+        emailVerified: true,
+      });
       user = { id: userId };
+    } else {
+      await onEmailVerified(user.id);
     }
     await query('DELETE FROM user_sessions WHERE expires_at < now()');
     res.clearCookie(COOKIE, { path: '/auth/google' });
     await startSession(res, user.id);
+    res.redirect('/consola');
+  }),
+);
+
+// Link do e-mail de confirmação (Resend): confirma o e-mail, prepara a conta e entra.
+googleAuth.get(
+  '/auth/verify-email',
+  asyncHandler(async (req, res) => {
+    const t = typeof req.query.token === 'string' ? req.query.token : '';
+    const userId = t ? await consumeVerificationToken(t) : null;
+    if (!userId) return res.redirect('/entrar?erro=verificacao_invalida');
+    await onEmailVerified(userId);
+    await startSession(res, userId);
     res.redirect('/consola');
   }),
 );

@@ -861,6 +861,44 @@ async function viewPesquisa(q) {
   </main>`;
 }
 
+// Equipa interna — programa Grátis (contas Grátis com a API ativa)
+
+async function viewGratis() {
+  if (!ME.user.is_admin && !ME.user.is_staff) {
+    view.innerHTML = `<main><p class="note bad">Só para a equipa interna (contas do plano Interno).</p></main>`;
+    return;
+  }
+  const rows = await api('GET', '/staff/free-program');
+  const active = (x) => x.subscription_status === 'active' && (!x.subscription_ends_at || new Date(x.subscription_ends_at) > new Date());
+  const members = rows.filter(active).length;
+  view.innerHTML = `<main><div class="head"><div><h1 class="page">Programa Grátis</h1>
+    <p class="lead">Contas do plano Grátis. As que estão no programa têm a API e os envios ativos, dentro do limite mensal do plano; as outras só veem a consola.</p></div></div>
+  <p class="note info">${members} de ${rows.length} conta(s) no programa. Só aparecem contas com o e-mail confirmado. Planos pagos e Interno são geridos pelo super-admin.</p>
+  <div class="tablebox"><table style="min-width:820px"><thead><tr><th>Conta</th><th>Responsável</th><th>Mensagens este mês</th><th>Estado</th><th>Até</th><th><span class="sr">Ações</span></th></tr></thead><tbody>
+  ${rows.length ? rows.map((x) => `<tr>
+    <td style="font-weight:500">${esc(x.name)} <code>${esc(x.slug)}</code><div style="font-size:12px;color:#4E5255">criada ${esc(dt(x.created_at))}</div></td>
+    <td>${esc(x.owner_name || '—')}<div style="font-size:12px;color:#4E5255">${esc(x.owner_email || (x.owner_phone ? '+' + x.owner_phone : ''))}</div></td>
+    <td>${x.messages_month}</td>
+    <td>${active(x) ? '<span class="pill ok">No programa</span>' : '<span class="pill mute">Fora</span>'}</td>
+    <td><input type="date" data-until="${x.id}" value="${x.subscription_ends_at ? esc(x.subscription_ends_at.slice(0, 10)) : ''}" aria-label="Data de fim para ${esc(x.name)}" style="min-height:36px;border:1px solid #DCDDDF;border-radius:8px;padding:0 8px"></td>
+    <td style="text-align:right;white-space:nowrap">${active(x)
+      ? `<button class="btn sec" type="button" data-save="${x.id}">Guardar data</button> <button class="btn danger" type="button" data-out="${x.id}">Retirar</button>`
+      : `<button class="btn" type="button" data-in="${x.id}">Adicionar ao programa</button>`}</td></tr>`).join('')
+    : '<tr><td colspan="6" class="empty">Ainda não há contas Grátis com e-mail confirmado.</td></tr>'}
+  </tbody></table></div></main>`;
+  const set = (id, member, btn) => busy(btn, async () => {
+    const until = $(`input[data-until="${id}"]`).value || null;
+    const r = await api('PUT', `/staff/free-program/${id}`, { member, ends_at: member ? until : null });
+    toast(r.keys.errors.length ? `Guardado, mas: ${r.keys.errors.join('; ')}` : member ? 'Conta no programa Grátis' : 'Conta retirada do programa', r.keys.errors.length > 0);
+    viewGratis();
+  });
+  $$('[data-in]').forEach((b) => b.addEventListener('click', () => set(b.dataset.in, true, b)));
+  $$('[data-save]').forEach((b) => b.addEventListener('click', () => set(b.dataset.save, true, b)));
+  $$('[data-out]').forEach((b) => b.addEventListener('click', () => {
+    if (confirm('Retirar esta conta do programa Grátis? A API e os envios dela ficam desligados.')) set(b.dataset.out, false, b);
+  }));
+}
+
 // Router
 
 async function route() {
@@ -879,6 +917,7 @@ async function route() {
     else if (r === 'mensagens') await viewMensagens();
     else if (r === 'webhooks') await viewWebhooks();
     else if (r === 'chaves') await viewChaves();
+    else if (r === 'gratis') await viewGratis();
     else if (r === 'admin') await viewAdmin(a);
     else if (r === 'admin-numeros' && a === 'ligar') await viewLigar(b, true);
     else if (r === 'admin-numeros') await viewAdminNumeros();
@@ -896,6 +935,7 @@ async function loadMe() {
   $('#plan-label').textContent = `Plano ${ME.tenant.plan_label}`;
   $('#user-email').textContent = ME.user.email || (ME.user.phone ? '+' + ME.user.phone : '');
   $('#nav-admin').hidden = !ME.user.is_admin;
+  $('#nav-staff').hidden = !ME.user.is_admin && !ME.user.is_staff;
   const sub = ME.subscription;
   const banner = $('#sub-banner');
   banner.hidden = sub.active;

@@ -11,6 +11,8 @@ export interface SessionUser {
   email: string | null;
   phone: string | null;
   is_admin: boolean;
+  /** Utilizador de uma conta Interno: gere o programa Grátis. */
+  is_staff: boolean;
 }
 
 export interface ApiKeyCtx {
@@ -53,8 +55,11 @@ export const requireUser = asyncHandler(async (req: Request, _res: Response, nex
   const t = req.cookies?.[COOKIE];
   if (!t) throw new ApiError(401, 'unauthenticated', 'Sessão expirada. Entre novamente.');
   const user = await one<SessionUser>(
-    `SELECT u.id, u.tenant_id, u.name, u.email, u.phone, u.is_admin FROM user_sessions s JOIN users u ON u.id = s.user_id
-     WHERE s.token_hash = $1 AND s.expires_at > now()`,
+    `SELECT u.id, u.tenant_id, u.name, u.email, u.phone, u.is_admin,
+            (t.plan = 'internal' AND (t.plan_until IS NULL OR t.plan_until >= current_date)) AS is_staff
+     FROM user_sessions s JOIN users u ON u.id = s.user_id JOIN tenants t ON t.id = u.tenant_id
+     WHERE s.token_hash = $1 AND s.expires_at > now()
+       AND (u.email IS NULL OR u.email_verified_at IS NOT NULL)`,
     [sha256(t)],
   );
   if (!user) throw new ApiError(401, 'unauthenticated', 'Sessão expirada. Entre novamente.');
@@ -64,6 +69,12 @@ export const requireUser = asyncHandler(async (req: Request, _res: Response, nex
 
 export const requireAdmin = (req: Request, _res: Response, next: NextFunction) => {
   if (!req.user?.is_admin) return next(new ApiError(403, 'forbidden', 'Só para super-admin.'));
+  next();
+};
+
+/** Equipa interna (contas Interno) ou super-admin. */
+export const requireStaff = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.user?.is_admin && !req.user?.is_staff) return next(new ApiError(403, 'forbidden', 'Só para a equipa interna.'));
   next();
 };
 

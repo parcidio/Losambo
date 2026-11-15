@@ -1,7 +1,7 @@
 import { assertSafeUrl } from '../net.js';
 import { Router, type Request } from 'express';
 import { z } from 'zod';
-import { endSession, requireAdmin, requireUser, startSession } from '../auth.js';
+import { endSession, requireAdmin, requireStaff, requireUser, startSession } from '../auth.js';
 import { ALL_EVENTS, config, PERMISSIONS, plans } from '../config.js';
 import { one, query } from '../db.js';
 import { ApiError, asyncHandler, parse } from '../http.js';
@@ -25,7 +25,8 @@ import {
   syncTenantKeys,
   updateSettings,
 } from '../services/numbers.js';
-import { createAccount } from '../services/accounts.js';
+import { createAccount, onEmailVerified } from '../services/accounts.js';
+import { sendVerificationEmail } from '../services/email.js';
 import { setSubscription } from '../services/subscriptions.js';
 import { googleEnabled } from './googleAuth.js';
 import { startWhatsAppAuth, verifyWhatsAppAuth } from '../services/whatsappAuth.js';
@@ -62,17 +63,39 @@ consoleApi.post(
       req.body,
     );
     const email = body.email.toLowerCase();
-    if (await one('SELECT 1 FROM users WHERE email = $1', [email])) {
+    const existing = await one<{ id: number; tenant_id: number; email_verified_at: string | null; google_sub: string | null }>(
+      'SELECT id, tenant_id, email_verified_at, google_sub FROM users WHERE email = $1',
+      [email],
+    );
+    if (existing && (existing.email_verified_at || existing.google_sub)) {
       throw new ApiError(409, 'email_taken', 'Já existe uma conta com este e-mail.');
     }
+    // Uma inscrição nunca confirmada não "reserva" o e-mail: é substituída (quem a fez não controla o e-mail).
+    if (existing) await query('DELETE FROM tenants WHERE id = $1', [existing.tenant_id]);
     const { userId } = await createAccount({
       name: body.name,
       company: body.company,
       email: email,
       passwordHash: await hashPassword(body.password),
+      emailVerified: false,
     });
-    await startSession(res, userId);
-    res.status(201).json({ ok: true });
+    // Sem sessão até o e-mail ser confirmado pelo link enviado (Resend).
+    await sendVerificationEmail({ id: userId, name: body.name, email: email });
+    res.status(202).json({ verify: true, email: email });
+  }),
+);
+
+// Reenvia o link de confirmação. Resposta igual exista ou não a conta (não revela e-mails registados).
+consoleApi.post(
+  '/auth/verify/resend',
+  asyncHandler(async (req, res) => {
+    const { email } = parse(z.object({ email: z.string().email().max(160) }), req.body);
+    const u = await one<{ id: number; name: string; email: string; email_verified_at: string | null }>(
+      'SELECT id, name, email, email_verified_at FROM users WHERE email = $1',
+      [email.toLowerCase()],
+    );
+    if (u && !u.email_verified_at) await sendVerificationEmail(u);
+    res.json({ ok: true });
   }),
 );
 
@@ -122,6 +145,7 @@ consoleApi.post(
         email: null,
         phone: r.phone,
         passwordHash: null,
+        emailVerified: false,
       });
       user = { id: userId };
     }
@@ -134,15 +158,20 @@ consoleApi.post(
   '/auth/login',
   asyncHandler(async (req, res) => {
     const body = parse(z.object({ email: z.string().email(), password: z.string().min(1) }), req.body);
-    const u = await one<{ id: number; password_hash: string | null }>('SELECT id, password_hash FROM users WHERE email = $1', [
-      body.email.toLowerCase(),
-    ]);
+    const u = await one<{ id: number; password_hash: string | null; email_verified_at: string | null }>(
+      'SELECT id, password_hash, email_verified_at FROM users WHERE email = $1',
+      [body.email.toLowerCase()],
+    );
     if (u && !u.password_hash) {
       throw new ApiError(401, 'no_password', 'Esta conta não tem palavra-passe. Entre com o Google ou com o WhatsApp.');
     }
     if (!u || !(await verifyPassword(body.password, u.password_hash!))) {
       throw new ApiError(401, 'invalid_credentials', 'E-mail ou palavra-passe errados.');
     }
+    if (!u.email_verified_at) {
+      throw new ApiError(403, 'email_not_verified', 'Confirme primeiro o seu e-mail: abra o link que lhe enviámos.');
+    }
+    await onEmailVerified(u.id); // aplica o plano Interno se o domínio passou a estar na lista
     await startSession(res, u.id);
     res.json({ ok: true });
   }),
@@ -480,6 +509,46 @@ consoleApi.delete(
 );
 
 // Administração (super-admin)
+
+// Programa Grátis: a equipa interna (contas Interno) escolhe que contas Grátis têm a API ativa.
+// Só mexe em contas do plano Grátis; planos pagos e Interno continuam com o super-admin.
+
+consoleApi.get(
+  '/staff/free-program',
+  requireStaff,
+  asyncHandler(async (_req, res) => {
+    res.json(
+      await query(
+        `SELECT t.id, t.name, t.slug, t.plan, t.subscription_status, t.subscription_ends_at, t.created_at,
+                u.name AS owner_name, u.email AS owner_email, u.phone AS owner_phone,
+                (SELECT count(*)::int FROM messages m WHERE m.tenant_id = t.id AND m.direction = 'out'
+                   AND m.created_at >= date_trunc('month', now())) AS messages_month
+         FROM tenants t
+         LEFT JOIN LATERAL (SELECT name, email, phone FROM users WHERE tenant_id = t.id ORDER BY id LIMIT 1) u ON true
+         WHERE t.plan = 'free'
+           AND EXISTS (SELECT 1 FROM users x WHERE x.tenant_id = t.id AND (x.email IS NULL OR x.email_verified_at IS NOT NULL))
+         ORDER BY (t.subscription_status = 'active') DESC, t.created_at DESC`,
+      ),
+    );
+  }),
+);
+
+consoleApi.put(
+  '/staff/free-program/:id',
+  requireStaff,
+  asyncHandler(async (req, res) => {
+    const body = parse(
+      z.object({ member: z.boolean(), ends_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional() }),
+      req.body,
+    );
+    const t = await getTenant(Number(req.params.id));
+    if (t.plan !== 'free') {
+      throw new ApiError(409, 'not_free_plan', 'Esta conta não está no plano Grátis; fale com o super-admin.');
+    }
+    const r = await setSubscription(t.id, body.member ? 'active' : 'inactive', body.member ? body.ends_at ?? null : null);
+    res.json({ id: t.id, subscription_status: r.tenant.subscription_status, subscription_ends_at: r.tenant.subscription_ends_at, keys: r.keys });
+  }),
+);
 
 consoleApi.get(
   '/admin/tenants',

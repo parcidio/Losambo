@@ -53,6 +53,9 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
    | `WAHA_WEBHOOK_TOKEN` | aleatório |
    | `LOSAMBO_SECRET_KEY` | aleatório, longo (cifra as chaves WAHA das contas — não mude depois) |
    | `PUBLIC_URL` | `https://message.beeznoo.ao` (sem `/` no fim) |
+   | `RESEND_API_KEY` | chave do Resend (envio dos e-mails de confirmação) |
+   | `EMAIL_FROM` | remetente num domínio verificado no Resend, ex.: `Losambo <no-reply@beeznoo.ao>` |
+   | `INTERNAL_EMAIL_DOMAINS` | domínios da equipa, ex.: `beeznoo.ao` — contas com e-mail confirmado destes domínios ficam Interno |
    | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | opcional |
    | `WHATSAPP_AUTH_SESSION` | opcional (número Losambo que envia os códigos de entrada) |
 
@@ -130,6 +133,17 @@ Webhooks enviados com `X-Losambo-Signature: sha256=<HMAC do corpo>`.
 O botão "Continuar com Google" só aparece quando o Google está configurado. Quem entra pela primeira vez
 com o Google ganha uma conta (com um número Losambo livre); se já existir uma conta com o mesmo
 e-mail verificado, o Google fica ligado a essa conta.
+
+## Confirmação de e-mail, contas internas e programa Grátis
+
+- **Todos os e-mails são confirmados.** Ao criar conta com e-mail, a Losambo envia um link (modelo React Email em
+  `src/emails/verify-email.tsx`, enviado pelo Resend). Sem confirmar não se entra. Uma inscrição nunca confirmada
+  não reserva o e-mail (quem confirmar a seguir fica com ele) e é apagada ao fim de 7 dias.
+  Contas Google já chegam confirmadas; contas WhatsApp não têm e-mail. Pré-visualizar o modelo: `npm run email`.
+- **Plano Interno por domínio:** quem confirmar um e-mail de um domínio em `INTERNAL_EMAIL_DOMAINS` fica com a conta
+  no plano Interno (também ao entrar, se o domínio for acrescentado depois).
+- **Programa Grátis:** os utilizadores de contas Interno veem *Programa Grátis* na consola e escolhem que contas Grátis
+  têm a API e os envios ativos (com data de fim opcional). Não mexem em planos pagos nem Interno — isso é do super-admin.
 
 ## Entrar com WhatsApp
 

@@ -46,6 +46,19 @@ export const config = {
   // Só em desenvolvimento: deixa webhooks e ficheiros apontar para localhost/redes privadas.
   allowPrivateUrls: ['1', 'true', 'yes', 'on'].includes(env('ALLOW_PRIVATE_URLS', 'false').toLowerCase()),
   publicApiUrl: env('PUBLIC_API_URL', 'http://localhost:4000/v1'),
+  // Endereço público do site (links nos e-mails). Por omissão, PUBLIC_API_URL sem o /v1.
+  publicUrl: env('PUBLIC_URL', env('PUBLIC_API_URL', 'http://localhost:4000/v1').replace(/\/v1\/?$/, '')).replace(/\/$/, ''),
+  // E-mails transacionais (verificação de e-mail) via Resend. Sem chave: em desenvolvimento o link aparece no registo.
+  email: {
+    resendApiKey: env('RESEND_API_KEY'),
+    from: env('EMAIL_FROM', 'Losambo <no-reply@beeznoo.ao>'),
+    verifyTtlHours: intEnv('EMAIL_VERIFY_TTL_HOURS', 24),
+  },
+  // Contas criadas com um e-mail (verificado) destes domínios ficam no plano Interno. Ex.: beeznoo.ao,losambo.ao
+  internalEmailDomains: env('INTERNAL_EMAIL_DOMAINS')
+    .split(',')
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean),
   // Entrar com WhatsApp: sessão WAHA que envia os códigos (por omissão, um número Losambo ligado).
   whatsappAuth: {
     session: env('WHATSAPP_AUTH_SESSION'),

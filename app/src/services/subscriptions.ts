@@ -1,5 +1,6 @@
 import { one, query } from '../db.js';
 import { ApiError } from '../http.js';
+import { purgeUnverifiedSignups } from './accounts.js';
 import { syncTenantKeys } from './numbers.js';
 import type { Tenant } from './tenants.js';
 
@@ -30,7 +31,10 @@ export async function expireSubscriptions(): Promise<void> {
 }
 
 export function startSubscriptionSweeper(): void {
-  const run = () => void expireSubscriptions().catch((err) => console.error('expireSubscriptions', err));
+  const run = () => {
+    void expireSubscriptions().catch((err) => console.error('expireSubscriptions', err));
+    void purgeUnverifiedSignups().catch((err) => console.error('purgeUnverifiedSignups', err));
+  };
   run();
   setInterval(run, 5 * 60 * 1000).unref();
 }
