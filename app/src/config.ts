@@ -27,6 +27,8 @@ export const config = {
   databaseUrl: env('DATABASE_URL', 'postgres://losambo:losambo@localhost:5433/losambo'),
   // DATABASE_SSL: true para bases geridas (Supabase…), false para o PostgreSQL da própria stack; vazio = segue o sslmode do URL.
   databaseSsl: ((v) => (v === '' ? undefined : ['1', 'true', 'yes', 'on'].includes(v)))(env('DATABASE_SSL').toLowerCase()),
+  // Palavra-passe do utilizador "waha" no PostgreSQL da stack (a Losambo cria/atualiza o utilizador ao arrancar).
+  wahaDbPassword: env('WAHA_DB_PASSWORD'),
   databasePoolMax: Number.parseInt(env('DATABASE_POOL_MAX', '10'), 10),
   waha: {
     url: env('WAHA_URL', 'http://localhost:3000').replace(/\/$/, ''),

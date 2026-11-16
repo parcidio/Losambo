@@ -47,7 +47,7 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
    | Variável | Valor |
    |---|---|
    | `POSTGRES_PASSWORD` | aleatório, **só letras e números** |
-   | `WAHA_DB_PASSWORD` | aleatório, **só letras e números** (utilizador `waha`, sem acesso à base da Losambo) |
+   | `WAHA_DB_PASSWORD` | aleatório, **só letras e números**. A Losambo cria/atualiza o utilizador `waha` do PostgreSQL com esta palavra-passe em cada arranque (sem acesso à base da Losambo); o WAHA só arranca depois disso |
    | `WAHA_API_KEY` | aleatório (chave admin do WAHA) |
    | `WAHA_WEBHOOK_TOKEN` | aleatório |
    | `LOSAMBO_SECRET_KEY` | aleatório, longo (cifra as chaves WAHA das contas — não mude depois) |

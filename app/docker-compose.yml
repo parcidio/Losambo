@@ -4,7 +4,7 @@
 # - O PostgreSQL guarda a Losambo (base "losambo") e as sessões WhatsApp do WAHA (bases "waha_…").
 # Defina as variáveis ${…} no Coolify (Environment Variables).
 # POSTGRES_PASSWORD e WAHA_DB_PASSWORD: só letras e números (o WAHA não descodifica caracteres especiais no URL).
-# O WAHA usa o utilizador "waha" (criado no 1.º arranque por docker/postgres-init), sem acesso à base "losambo".
+# O WAHA usa o utilizador "waha" (criado/atualizado pela Losambo em cada arranque), sem acesso à base "losambo".
 
 services:
   losambo:
@@ -25,6 +25,8 @@ services:
       DATABASE_URL: postgres://losambo:${POSTGRES_PASSWORD:?}@postgres:5432/losambo
       DATABASE_SSL: "false"
       DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      # A Losambo cria/atualiza o utilizador "waha" do PostgreSQL com esta palavra-passe ao arrancar.
+      WAHA_DB_PASSWORD: ${WAHA_DB_PASSWORD:?}
       # --- Segredos ---
       LOSAMBO_SECRET_KEY: ${LOSAMBO_SECRET_KEY:?}
       # --- WAHA (rede interna) ---
@@ -68,8 +70,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      waha:
-        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/console-api/auth/providers >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 5s
+      start_period: 20s
+      retries: 20
     read_only: true
     tmpfs:
       - /tmp
@@ -101,8 +107,11 @@ services:
       WHATSAPP_SWAGGER_ENABLED: "false"
     volumes:
       - waha-media:/app/.media
+    # Arranca depois da Losambo estar saudável: nessa altura o utilizador "waha" já existe no PostgreSQL.
     depends_on:
       postgres:
+        condition: service_healthy
+      losambo:
         condition: service_healthy
     security_opt:
       - no-new-privileges:true
@@ -114,10 +123,8 @@ services:
       POSTGRES_USER: losambo
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
       POSTGRES_DB: losambo
-      WAHA_DB_PASSWORD: ${WAHA_DB_PASSWORD:?}
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U losambo -d losambo"]
       interval: 5s
