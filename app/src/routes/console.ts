@@ -218,12 +218,22 @@ consoleApi.get(
       ]),
     ]);
     let wahaOk = true;
+    let wahaError: string | null = null;
     try {
       await wahaAdmin.version();
-    } catch {
+    } catch (err) {
       wahaOk = false;
+      // O motivo exato só para o super-admin (pode mencionar endereços internos).
+      if (req.user!.is_admin) wahaError = (err as Error).message;
     }
-    res.json({ numbers: numbers.map(strip), webhook: ep ? { url: ep.url, events: ep.events } : null, otp: otpStats, messages: msgStats, waha: wahaOk });
+    res.json({
+      numbers: numbers.map(strip),
+      webhook: ep ? { url: ep.url, events: ep.events } : null,
+      otp: otpStats,
+      messages: msgStats,
+      waha: wahaOk,
+      waha_error: wahaError,
+    });
   }),
 );
 

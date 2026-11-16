@@ -127,7 +127,9 @@ async function viewInicio() {
     ${o.numbers.length || !ME.tenant.limits.allowOwnNumbers ? '' : `<a class="home-cta" href="#/numeros/ligar">Ligue o seu primeiro número em 2 minutos <span><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#1D1F20" stroke-width="2.4"><path d="M5 12h13M12 6l6 6-6 6"></path></svg></span></a>`}
     <h1 class="home-h1" style="margin:48px 0 40px;font-size:46px;font-weight:600;letter-spacing:-.02em">Pronto quando estiver.</h1>
   </div>
-  ${o.waha ? '' : `<p class="note bad">O motor WAHA não está a responder. Verifique se o container está a correr e se <code>WAHA_API_KEY</code> está certo no <code>.env</code>.</p>`}
+  ${o.waha ? '' : ME.user.is_admin
+    ? `<p class="note bad">O motor WAHA não está a responder. Veja os registos do serviço <code>waha</code> e se <code>WAHA_API_KEY</code> é o mesmo nos dois serviços.${o.waha_error ? `<br><span style="font-size:13px">Erro: <code>${esc(o.waha_error)}</code></span>` : ''}</p>`
+    : '<p class="note bad">O envio de WhatsApp está temporariamente indisponível. A equipa Losambo já foi avisada.</p>'}
   <form class="bigsearch" id="bigsearch" role="search">
     <label for="big" class="sr">Pesquisar</label>
     <div class="searchbox">${icon.search}<input id="big" type="search" placeholder="Pesquisar números, mensagens, OTP…"><kbd>Ctrl</kbd><kbd>K</kbd></div>
