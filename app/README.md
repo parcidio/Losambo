@@ -53,7 +53,7 @@ Contas de teste locais criadas durante o desenvolvimento (palavra-passe `teste-l
    | `LOSAMBO_SECRET_KEY` | aleatório, longo (cifra as chaves WAHA das contas — não mude depois) |
    | `PUBLIC_URL` | `https://message.beeznoo.ao` (sem `/` no fim) |
    | `RESEND_API_KEY` | chave do Resend (envio dos e-mails de confirmação) |
-   | `EMAIL_FROM` | remetente num domínio verificado no Resend, ex.: `Losambo <no-reply@beeznoo.ao>` |
+   | `EMAIL_FROM` | remetente num domínio verificado no Resend, ex.: `Losambo <no-reply@message.beeznoo.ao>` |
    | `INTERNAL_EMAIL_DOMAINS` | domínios da equipa, ex.: `beeznoo.ao` — contas com e-mail confirmado destes domínios ficam Interno |
    | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | opcional |
    | `WHATSAPP_AUTH_SESSION` | opcional (número Losambo que envia os códigos de entrada) |

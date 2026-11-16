@@ -51,7 +51,7 @@ export const config = {
   // E-mails transacionais (verificação de e-mail) via Resend. Sem chave: em desenvolvimento o link aparece no registo.
   email: {
     resendApiKey: env('RESEND_API_KEY'),
-    from: env('EMAIL_FROM', 'Losambo <no-reply@beeznoo.ao>'),
+    from: env('EMAIL_FROM', 'Losambo <no-reply@message.beeznoo.ao>'),
     verifyTtlHours: intEnv('EMAIL_VERIFY_TTL_HOURS', 24),
   },
   // Contas criadas com um e-mail (verificado) destes domínios ficam no plano Interno. Ex.: beeznoo.ao,losambo.ao
