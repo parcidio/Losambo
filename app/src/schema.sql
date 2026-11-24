@@ -175,3 +175,6 @@ CREATE TABLE IF NOT EXISTS email_tokens (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS email_tokens_user_idx ON email_tokens (user_id, created_at DESC);
+
+-- Recuperar palavra-passe: os links de e-mail têm uma finalidade ('verify' ou 'reset').
+ALTER TABLE email_tokens ADD COLUMN IF NOT EXISTS purpose TEXT NOT NULL DEFAULT 'verify';

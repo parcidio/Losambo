@@ -64,6 +64,7 @@ a{color:#B4540A}a:hover{color:#8A4100}
 <p class="err" role="alert"></p>
 <div class="field"><label for="l-email">E-mail</label><input id="l-email" name="email" type="email" autocomplete="email" placeholder="voce@empresa.ao" required></div>
 <div class="field"><label for="l-pw">Palavra-passe</label><input id="l-pw" name="password" type="password" autocomplete="current-password" required></div>
+<p style="margin:-6px 0 18px;text-align:right;font-size:15px"><a href="#recuperar" id="forgot-link">Esqueceu a palavra-passe?</a></p>
 <button type="submit" class="btn-primary">Entrar</button>
 </form>
 
@@ -125,6 +126,30 @@ a{color:#B4540A}a:hover{color:#8A4100}
 <p style="margin:32px 0 56px;font-size:18px;color:#4E5255"><a href="#" id="wa-back" style="font-weight:500">Voltar</a></p>
 </section>
 
+<section id="v-forgot" hidden>
+<h1 style="margin:0 0 12px;font-size:34px;font-weight:600;letter-spacing:-0.015em">Recuperar palavra-passe</h1>
+<p style="margin:0 0 32px;font-size:17px;line-height:1.55;color:#4E5255">Indique o e-mail da sua conta. Enviamos-lhe um link para escolher uma nova palavra-passe.</p>
+<form id="f-forgot" novalidate>
+<p class="ok" role="status"></p>
+<p class="err" role="alert"></p>
+<div class="field"><label for="fg-email">E-mail</label><input id="fg-email" name="email" type="email" autocomplete="email" placeholder="voce@empresa.ao" required></div>
+<button type="submit" class="btn-primary">Enviar link</button>
+</form>
+<p style="margin:32px 0 56px;font-size:18px;color:#4E5255"><a href="#" style="font-weight:500">Voltar a entrar</a></p>
+</section>
+
+<section id="v-reset" hidden>
+<h1 style="margin:0 0 12px;font-size:34px;font-weight:600;letter-spacing:-0.015em">Nova palavra-passe</h1>
+<p style="margin:0 0 32px;font-size:17px;line-height:1.55;color:#4E5255">Escolha a nova palavra-passe. As outras sessões abertas desta conta são terminadas.</p>
+<form id="f-reset" novalidate>
+<p class="err" role="alert"></p>
+<div class="field"><label for="rs-pw">Nova palavra-passe <span style="color:#6B6F73;font-weight:400">(mín. 8 caracteres)</span></label><input id="rs-pw" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+<div class="field"><label for="rs-pw2">Repita a palavra-passe</label><input id="rs-pw2" name="password2" type="password" autocomplete="new-password" minlength="8" required></div>
+<button type="submit" class="btn-primary">Guardar e entrar</button>
+</form>
+<p style="margin:32px 0 56px;font-size:18px;color:#4E5255"><a href="#recuperar" style="font-weight:500">Pedir um novo link</a></p>
+</section>
+
 <p style="margin:0 auto;max-width:380px;font-size:16px;line-height:1.7;color:#4E5255">Ao continuar, aceito os <a href="#" style="color:#4E5255">termos</a>, a <a href="#" style="color:#4E5255">política de privacidade</a> e a <a href="#" style="color:#4E5255">política de cookies</a> do Losambo.</p>
 </div>
 </div>
@@ -177,16 +202,79 @@ Ver documentação</a>
 
 </div>
 <script>
+let RESET_TOKEN = null;
 function view() {
-  const h = location.hash;
+  let h = location.hash;
+  // Link do e-mail: #redefinir/<token>. Guarda o token e tira-o do endereço (histórico).
+  if (h.startsWith('#redefinir/')) {
+    RESET_TOKEN = decodeURIComponent(h.slice('#redefinir/'.length));
+    history.replaceState(null, '', location.pathname + '#redefinir');
+    h = '#redefinir';
+  }
   const wa = h === '#whatsapp' || h === '#criar-whatsapp';
   const signup = h === '#criar' || h === '#criar-whatsapp';
-  document.getElementById('v-login').hidden = wa || signup;
+  const forgot = h === '#recuperar';
+  const reset = h === '#redefinir';
+  document.getElementById('v-login').hidden = wa || signup || forgot || reset;
   document.getElementById('v-signup').hidden = wa || !signup;
   document.getElementById('v-wa').hidden = !wa;
+  document.getElementById('v-forgot').hidden = !forgot;
+  document.getElementById('v-reset').hidden = !reset;
   if (wa) waSetup(signup ? 'signup' : 'login');
-  document.title = signup ? 'Losambo — Criar conta' : 'Losambo — Entrar';
+  if (forgot) {
+    const em = document.getElementById('l-email').value;
+    if (em && !document.getElementById('fg-email').value) document.getElementById('fg-email').value = em;
+  }
+  if (reset && !RESET_TOKEN) {
+    const err = document.querySelector('#f-reset .err');
+    err.textContent = 'Este link não é válido. Peça um novo link de recuperação.';
+    err.style.display = 'block';
+  }
+  document.title = signup ? 'Losambo — Criar conta' : forgot || reset ? 'Losambo — Recuperar palavra-passe' : 'Losambo — Entrar';
 }
+// Recuperar palavra-passe
+document.getElementById('f-forgot').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const ok = form.querySelector('.ok');
+  const err = form.querySelector('.err');
+  ok.style.display = err.style.display = 'none';
+  const btn = form.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/console-api/auth/password/forgot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: form.email.value.trim() }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.issues ? 'Indique um e-mail válido.' : data.message || 'Erro');
+    ok.textContent = 'Se existir uma conta com este e-mail, enviámos um link para escolher uma nova palavra-passe. Veja também o spam.';
+    ok.style.display = 'block';
+  } catch (ex) { err.textContent = ex.message; err.style.display = 'block'; }
+  finally { btn.disabled = false; }
+});
+document.getElementById('f-reset').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const err = form.querySelector('.err');
+  err.style.display = 'none';
+  const show = (m) => { err.textContent = m; err.style.display = 'block'; };
+  if (!RESET_TOKEN) return show('Este link não é válido. Peça um novo link de recuperação.');
+  if (form.password.value.length < 8) return show('A palavra-passe precisa de pelo menos 8 caracteres.');
+  if (form.password.value !== form.password2.value) return show('As duas palavras-passe não são iguais.');
+  const btn = form.querySelector('button[type=submit]');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/console-api/auth/password/reset', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: RESET_TOKEN, password: form.password.value }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || 'Erro');
+    location.href = '/consola';
+  } catch (ex) { show(ex.message); }
+  finally { btn.disabled = false; }
+});
 // Entrar / criar conta com WhatsApp
 const WA = { mode: 'login', id: null, timer: null };
 const waStart = document.getElementById('f-wa-start');

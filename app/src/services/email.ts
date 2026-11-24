@@ -1,6 +1,7 @@
 import { createElement, type ReactElement } from 'react';
 import { render } from 'react-email';
 import { Resend } from 'resend';
+import ResetPasswordEmail from '../emails/reset-password.js';
 import VerifyEmail from '../emails/verify-email.js';
 import { config } from '../config.js';
 import { one, query } from '../db.js';
@@ -38,7 +39,7 @@ const RESEND_COOLDOWN_SECONDS = 60;
 /** Cria um link de verificação (uso único) e envia-o para o e-mail do utilizador. */
 export async function sendVerificationEmail(user: { id: number; name: string; email: string }): Promise<void> {
   const recent = await one<{ age: number }>(
-    `SELECT extract(epoch FROM now() - max(created_at))::int AS age FROM email_tokens WHERE user_id = $1`,
+    `SELECT extract(epoch FROM now() - max(created_at))::int AS age FROM email_tokens WHERE user_id = $1 AND purpose = 'verify'`,
     [user.id],
   );
   if (recent && recent.age !== null && recent.age < RESEND_COOLDOWN_SECONDS) {
@@ -46,7 +47,7 @@ export async function sendVerificationEmail(user: { id: number; name: string; em
   }
   const t = token(32);
   await query(
-    `INSERT INTO email_tokens (token_hash, user_id, expires_at) VALUES ($1, $2, now() + make_interval(hours => $3))`,
+    `INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at) VALUES ($1, $2, 'verify', now() + make_interval(hours => $3))`,
     [sha256(t), user.id, config.email.verifyTtlHours],
   );
   const link = `${config.publicUrl}/auth/verify-email?token=${encodeURIComponent(t)}`;
@@ -62,10 +63,52 @@ export async function sendVerificationEmail(user: { id: number; name: string; em
 export async function consumeVerificationToken(raw: string): Promise<number | null> {
   const row = await one<{ user_id: number }>(
     `UPDATE email_tokens SET used_at = now()
-     WHERE token_hash = $1 AND used_at IS NULL AND expires_at > now() RETURNING user_id`,
+     WHERE token_hash = $1 AND purpose = 'verify' AND used_at IS NULL AND expires_at > now() RETURNING user_id`,
     [sha256(raw)],
   );
   if (!row) return null;
   await query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1', [row.user_id]);
+  return row.user_id;
+}
+
+/**
+ * Recuperar palavra-passe: envia um link de uso único (válido PASSWORD_RESET_TTL_MINUTES).
+ * Nunca revela se o e-mail existe: quem chama responde sempre o mesmo. Pedidos repetidos dentro
+ * de 60 s são ignorados em silêncio.
+ */
+export async function sendPasswordResetEmail(user: { id: number; name: string; email: string }): Promise<void> {
+  const recent = await one<{ age: number }>(
+    `SELECT extract(epoch FROM now() - max(created_at))::int AS age FROM email_tokens WHERE user_id = $1 AND purpose = 'reset'`,
+    [user.id],
+  );
+  if (recent && recent.age !== null && recent.age < RESEND_COOLDOWN_SECONDS) return;
+  const t = token(32);
+  await query(
+    `INSERT INTO email_tokens (token_hash, user_id, purpose, expires_at) VALUES ($1, $2, 'reset', now() + make_interval(mins => $3))`,
+    [sha256(t), user.id, config.email.resetTtlMinutes],
+  );
+  // O token vai depois do "#": não aparece em registos de servidores nem no cabeçalho Referer.
+  const link = `${config.publicUrl}/entrar#redefinir/${encodeURIComponent(t)}`;
+  await sendEmail({
+    to: user.email,
+    subject: 'Redefinir a palavra-passe — Losambo',
+    react: createElement(ResetPasswordEmail, {
+      name: user.name.split(' ')[0] || user.name,
+      resetUrl: link,
+      expiresMinutes: config.email.resetTtlMinutes,
+    }),
+  });
+}
+
+/** Consome um link de recuperação. Devolve o utilizador, ou null se for inválido, expirado ou já usado. */
+export async function consumeResetToken(raw: string): Promise<number | null> {
+  const row = await one<{ user_id: number }>(
+    `UPDATE email_tokens SET used_at = now()
+     WHERE token_hash = $1 AND purpose = 'reset' AND used_at IS NULL AND expires_at > now() RETURNING user_id`,
+    [sha256(raw)],
+  );
+  if (!row) return null;
+  // Os outros links de recuperação desta pessoa deixam de valer.
+  await query(`UPDATE email_tokens SET used_at = now() WHERE user_id = $1 AND purpose = 'reset' AND used_at IS NULL`, [row.user_id]);
   return row.user_id;
 }

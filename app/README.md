@@ -139,6 +139,10 @@ e-mail verificado, o Google fica ligado a essa conta.
   `src/emails/verify-email.tsx`, enviado pelo Resend). Sem confirmar não se entra. Uma inscrição nunca confirmada
   não reserva o e-mail (quem confirmar a seguir fica com ele) e é apagada ao fim de 7 dias.
   Contas Google já chegam confirmadas; contas WhatsApp não têm e-mail. Pré-visualizar o modelo: `npm run email`.
+- **Recuperar palavra-passe:** "Esqueceu a palavra-passe?" em /entrar envia um link de uso único (60 min,
+  `PASSWORD_RESET_TTL_MINUTES`; modelo em `src/emails/reset-password.tsx`). A resposta é sempre igual, exista ou não
+  a conta. Ao guardar a nova palavra-passe, o e-mail fica confirmado e todas as outras sessões terminam.
+  Contas só-Google também podem criar uma palavra-passe por aqui.
 - **Plano Interno por domínio:** quem confirmar um e-mail de um domínio em `INTERNAL_EMAIL_DOMAINS` fica com a conta
   no plano Interno (também ao entrar, se o domínio for acrescentado depois).
 - **Programa Grátis:** os utilizadores de contas Interno veem *Programa Grátis* na consola e escolhem que contas Grátis

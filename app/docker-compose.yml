@@ -57,6 +57,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:?}
       EMAIL_FROM: ${EMAIL_FROM:-Losambo <no-reply@message.beeznoo.ao>}
       EMAIL_VERIFY_TTL_HOURS: ${EMAIL_VERIFY_TTL_HOURS:-24}
+      PASSWORD_RESET_TTL_MINUTES: ${PASSWORD_RESET_TTL_MINUTES:-60}
       INTERNAL_EMAIL_DOMAINS: ${INTERNAL_EMAIL_DOMAINS:-beeznoo.ao}
       # --- Entrar com WhatsApp ---
       WHATSAPP_AUTH_SESSION: ${WHATSAPP_AUTH_SESSION:-}

@@ -26,7 +26,7 @@ import {
   updateSettings,
 } from '../services/numbers.js';
 import { createAccount, onEmailVerified } from '../services/accounts.js';
-import { sendVerificationEmail } from '../services/email.js';
+import { consumeResetToken, sendPasswordResetEmail, sendVerificationEmail } from '../services/email.js';
 import { setSubscription } from '../services/subscriptions.js';
 import { googleEnabled } from './googleAuth.js';
 import { startWhatsAppAuth, verifyWhatsAppAuth } from '../services/whatsappAuth.js';
@@ -99,6 +99,45 @@ consoleApi.post(
   }),
 );
 
+// Recuperar palavra-passe. A resposta é sempre igual: não revela que e-mails têm conta.
+consoleApi.post(
+  '/auth/password/forgot',
+  asyncHandler(async (req, res) => {
+    const { email } = parse(z.object({ email: z.string().email().max(160) }), req.body);
+    const u = await one<{ id: number; name: string; email: string }>('SELECT id, name, email FROM users WHERE email = $1', [
+      email.toLowerCase(),
+    ]);
+    if (u) {
+      try {
+        await sendPasswordResetEmail(u);
+      } catch (err) {
+        console.error('Recuperar palavra-passe: envio falhou —', (err as Error).message);
+      }
+    }
+    res.json({ ok: true });
+  }),
+);
+
+consoleApi.post(
+  '/auth/password/reset',
+  asyncHandler(async (req, res) => {
+    const body = parse(z.object({ token: z.string().min(20).max(200), password: z.string().min(8).max(200) }), req.body);
+    const userId = await consumeResetToken(body.token);
+    if (!userId) {
+      throw new ApiError(400, 'reset_invalid', 'O link é inválido, expirou ou já foi usado. Peça um novo.');
+    }
+    // Quem abriu o link controla o e-mail: confirma-o, troca a palavra-passe e termina todas as outras sessões.
+    await query('UPDATE users SET password_hash = $2, email_verified_at = COALESCE(email_verified_at, now()) WHERE id = $1', [
+      userId,
+      await hashPassword(body.password),
+    ]);
+    await query('DELETE FROM user_sessions WHERE user_id = $1', [userId]);
+    await onEmailVerified(userId);
+    await startSession(res, userId);
+    res.json({ ok: true });
+  }),
+);
+
 consoleApi.get('/auth/providers', (_req, res) => {
   res.json({ google: googleEnabled(), whatsapp: true });
 });
@@ -163,7 +202,7 @@ consoleApi.post(
       [body.email.toLowerCase()],
     );
     if (u && !u.password_hash) {
-      throw new ApiError(401, 'no_password', 'Esta conta não tem palavra-passe. Entre com o Google ou com o WhatsApp.');
+      throw new ApiError(401, 'no_password', 'Esta conta não tem palavra-passe. Entre com o Google ou o WhatsApp, ou crie uma em “Esqueceu a palavra-passe?”.');
     }
     if (!u || !(await verifyPassword(body.password, u.password_hash!))) {
       throw new ApiError(401, 'invalid_credentials', 'E-mail ou palavra-passe errados.');

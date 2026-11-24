@@ -55,6 +55,7 @@ export const config = {
     resendApiKey: env('RESEND_API_KEY'),
     from: env('EMAIL_FROM', 'Losambo <no-reply@message.beeznoo.ao>'),
     verifyTtlHours: intEnv('EMAIL_VERIFY_TTL_HOURS', 24),
+    resetTtlMinutes: intEnv('PASSWORD_RESET_TTL_MINUTES', 60),
   },
   // Contas criadas com um e-mail (verificado) destes domínios ficam no plano Interno. Ex.: beeznoo.ao,losambo.ao
   internalEmailDomains: env('INTERNAL_EMAIL_DOMAINS')
