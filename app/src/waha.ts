@@ -39,6 +39,21 @@ export interface Timelock {
   timeEnforcementEnds: number | null;
 }
 
+export interface WahaContact {
+  id: string;
+  number?: string | null;
+  name?: string | null;
+  pushname?: string | null;
+  shortName?: string | null;
+  isMe?: boolean;
+  isGroup?: boolean;
+  isUser?: boolean;
+  isBusiness?: boolean;
+  isMyContact?: boolean;
+  isBlocked?: boolean;
+  isWAContact?: boolean;
+}
+
 export interface WahaApiKey {
   id: string;
   key: string;
@@ -126,6 +141,13 @@ function makeClient(apiKey: string | (() => string), isAdmin = false) {
         'GET',
         `/api/contacts/check-exists?session=${enc(s)}&phone=${enc(phone)}`,
       ),
+    /** GET /api/contacts/all — contactos da sessão, com paginação e ordenação. */
+    contactsAll: (s: string, p: { limit: number; offset: number; sortBy?: 'id' | 'name'; sortOrder?: 'asc' | 'desc' }) => {
+      const q = new URLSearchParams({ session: s, limit: String(p.limit), offset: String(p.offset) });
+      if (p.sortBy) q.set('sortBy', p.sortBy);
+      if (p.sortOrder) q.set('sortOrder', p.sortOrder);
+      return json<WahaContact[]>('GET', `/api/contacts/all?${q}`);
+    },
     startTyping: (s: string, chatId: string) => json('POST', '/api/startTyping', { session: s, chatId }),
     stopTyping: (s: string, chatId: string) => json('POST', '/api/stopTyping', { session: s, chatId }),
     sendSeen: (s: string, chatId: string) => json('POST', '/api/sendSeen', { session: s, chatId }),

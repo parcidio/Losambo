@@ -170,6 +170,47 @@ publicApi.post(
   }),
 );
 
+// Lista os contactos WhatsApp de um número da conta (WAHA GET /api/contacts/all).
+const contactsQuery = z.object({
+  via: z.string().max(80).optional(),
+  limit: z.coerce.number().int().min(1).max(1000).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
+  sort_by: z.enum(['name', 'id']).optional(),
+  sort_order: z.enum(['asc', 'desc']).optional(),
+});
+
+publicApi.get(
+  '/contacts',
+  can('read'),
+  asyncHandler(async (req, res) => {
+    const q = parse(contactsQuery, req.query);
+    const n = await pickNumber(tenant(req), q.via ?? null, req.apiKey!.number_ids);
+    const rows = await (await clientFor(n)).contactsAll(n.session_name, {
+      limit: q.limit,
+      offset: q.offset,
+      sortBy: q.sort_by,
+      sortOrder: q.sort_order,
+    });
+    res.json({
+      via: n.session_name,
+      limit: q.limit,
+      offset: q.offset,
+      count: rows.length,
+      data: rows.map((c) => ({
+        id: c.id,
+        phone: c.number ?? (c.id?.endsWith('@c.us') ? c.id.split('@')[0] : null),
+        name: c.name ?? null,
+        push_name: c.pushname ?? null,
+        short_name: c.shortName ?? null,
+        is_my_contact: c.isMyContact ?? null,
+        is_business: c.isBusiness ?? null,
+        is_group: c.isGroup ?? (c.id?.endsWith('@g.us') ?? null),
+        is_blocked: c.isBlocked ?? null,
+      })),
+    });
+  }),
+);
+
 publicApi.get(
   '/contacts/:phone',
   can('read'),

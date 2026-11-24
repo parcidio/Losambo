@@ -116,6 +116,7 @@ O plano Interno é sempre sem limites.
 | `POST /otp/reverse` | webhook `message` com `LSB-XXXXXX` |
 | `POST /otp/verify` | — (só Losambo) |
 | `POST /messages` | `sendText` · `sendImage` · `sendFile` |
+| `GET /contacts?via=&limit=&offset=&sort_by=&sort_order=` | `GET /api/contacts/all` |
 | `GET /contacts/{phone}` | `GET /api/contacts/check-exists` |
 
 Permissões das chaves: `read`, `send`, `control`, `settings`, `delete`.
