@@ -6,6 +6,7 @@ import { migrate } from './db.js';
 import { ensureWahaDbRole } from './wahaDbRole.js';
 import { enforceSingleOwner } from './services/numbers.js';
 import { errorHandler } from './http.js';
+import { staticSite } from './staticSite.js';
 import { consoleApi } from './routes/console.js';
 import { publicApi } from './routes/public.js';
 import { googleAuth } from './routes/googleAuth.js';
@@ -32,8 +33,7 @@ app.use('/v1', publicApi);
 app.use('/console-api', consoleApi);
 
 const pub = fileURLToPath(new URL('../public', import.meta.url));
-app.use(express.static(pub, { extensions: ['html'] }));
-app.get('/consola*', (_req, res) => res.sendFile(`${pub}/consola.html`));
+app.use(staticSite(pub));
 
 app.use(errorHandler);
 
