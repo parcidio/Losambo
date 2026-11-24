@@ -26,6 +26,7 @@ import {
   updateSettings,
 } from '../services/numbers.js';
 import { createAccount, onEmailVerified } from '../services/accounts.js';
+import { contactsQuery, listContacts } from '../services/contacts.js';
 import { consumeResetToken, sendPasswordResetEmail, sendVerificationEmail } from '../services/email.js';
 import { setSubscription } from '../services/subscriptions.js';
 import { googleEnabled } from './googleAuth.js';
@@ -423,6 +424,14 @@ consoleApi.post(
   asyncHandler(async (req, res) => {
     const body = parse(z.object({ to: z.string().min(6), text: z.string().min(1).max(4096), via: z.string().optional() }), req.body);
     res.status(202).json(await sendMessage(tid(req), { type: 'text', ...body }));
+  }),
+);
+
+// Contactos (mesma lógica que GET /v1/contacts) — para testar na consola.
+consoleApi.get(
+  '/contacts',
+  asyncHandler(async (req, res) => {
+    res.json(await listContacts(tid(req), parse(contactsQuery, req.query)));
   }),
 );
 

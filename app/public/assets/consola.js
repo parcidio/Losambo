@@ -547,6 +547,64 @@ async function viewMensagens() {
   every(5000, load);
 }
 
+// Contactos — testar GET /v1/contacts (WAHA GET /api/contacts/all)
+
+async function viewContactos() {
+  const nums = (await api('GET', '/numbers').catch(() => [])).filter((n) => n.status === 'WORKING');
+  const st = { via: '', limit: 100, offset: 0, sort_by: 'name', sort_order: 'asc' };
+  view.innerHTML = `<main><div class="head"><div><h1 class="page">Contactos</h1><p class="lead">Os contactos WhatsApp de um número da conta. É o mesmo pedido que <code>GET /v1/contacts</code> faz na API.</p></div></div>
+  ${nums.length ? '' : '<p class="note warn">Nenhum número ligado nesta conta. Os contactos aparecem quando a conta tiver um número com o estado <strong>Ligado</strong>.</p>'}
+  <div class="grid2" style="margin-bottom:24px"><section class="card"><h2>Pedido</h2>
+    <form id="cf">
+      <div class="f"><label for="c-via">Número</label><select id="c-via" name="via"><option value="">Automático (o mais disponível)</option>${nums.map((n) => `<option value="${esc(n.session_name)}">${esc(n.session_name)} ${esc(fmtPhone(n.phone))}</option>`).join('')}</select></div>
+      <div class="f"><label for="c-sort">Ordenar por</label><select id="c-sort" name="sort_by"><option value="name">Nome</option><option value="id">ID</option></select></div>
+      <div class="f"><label for="c-order">Ordem</label><select id="c-order" name="sort_order"><option value="asc">A → Z</option><option value="desc">Z → A</option></select></div>
+      <div class="f"><label for="c-limit">Por página</label><select id="c-limit" name="limit"><option>50</option><option selected>100</option><option>500</option><option>1000</option></select></div>
+      <button class="btn" type="submit"${nums.length ? '' : ' disabled'}>Carregar contactos</button>
+    </form></section>
+    <section class="card"><h2>Pela API</h2><pre class="code" id="c-curl"></pre></section></div>
+  <div class="head" style="align-items:center;margin-bottom:12px"><p class="lead" id="c-info" style="margin:0"></p>
+    <div class="btns"><input id="c-q" type="search" placeholder="Filtrar nesta página…" aria-label="Filtrar contactos desta página" style="min-height:40px;border:1px solid #DCDDDF;border-radius:10px;padding:0 12px">
+    <button class="btn sec" type="button" id="c-prev" disabled>Anterior</button><button class="btn sec" type="button" id="c-next" disabled>Seguinte</button></div></div>
+  <div class="tablebox"><table style="min-width:760px"><thead><tr><th>Nome</th><th>Telefone</th><th>Nome no WhatsApp</th><th>Tipo</th><th>ID</th></tr></thead><tbody id="c-rows"><tr><td colspan="5" class="empty">Escolha as opções e carregue os contactos.</td></tr></tbody></table></div></main>`;
+  let rows = [];
+  const f = $('#cf');
+  const qs = () => {
+    const p = new URLSearchParams({ limit: st.limit, offset: st.offset, sort_by: st.sort_by, sort_order: st.sort_order });
+    if (st.via) p.set('via', st.via);
+    return p.toString();
+  };
+  const curl = () => {
+    $('#c-curl').textContent = `curl "${ME.publicApiUrl}/contacts?${qs()}" \\\n  -H "Authorization: Bearer lsb_live_…"`;
+  };
+  const kind = (c) => c.is_group ? '<span class="chip">Grupo</span>' : c.is_business ? '<span class="chip">Empresa</span>' : c.is_my_contact ? '<span class="chip">Na agenda</span>' : '';
+  const draw = () => {
+    const term = $('#c-q').value.trim().toLowerCase();
+    const list = term ? rows.filter((c) => [c.name, c.push_name, c.phone, c.id].some((v) => v && String(v).toLowerCase().includes(term))) : rows;
+    $('#c-rows').innerHTML = list.length ? list.map((c) => `<tr><td style="font-weight:500">${esc(c.name || c.short_name || '—')}</td><td class="mono">${esc(c.phone ? fmtPhone('+' + c.phone) : '—')}</td><td>${esc(c.push_name || '—')}</td><td>${kind(c)}${c.is_blocked ? '<span class="pill bad">Bloqueado</span>' : ''}</td><td class="mono" style="font-size:12px">${esc(c.id)}</td></tr>`).join('')
+      : `<tr><td colspan="5" class="empty">${rows.length ? 'Nenhum contacto corresponde ao filtro.' : 'Sem contactos nesta página.'}</td></tr>`;
+  };
+  async function load() {
+    curl();
+    const btn = f.querySelector('button[type=submit]');
+    await busy(btn, async () => {
+      const r = await api('GET', `/contacts?${qs()}`);
+      rows = r.data;
+      $('#c-info').textContent = r.count ? `Contactos ${r.offset + 1}–${r.offset + r.count} · número ${r.via}` : `Sem contactos a partir da posição ${r.offset + 1} · número ${r.via}`;
+      $('#c-prev').disabled = st.offset === 0;
+      $('#c-next').disabled = r.count < st.limit;
+      draw();
+    });
+  }
+  const read = () => Object.assign(st, { via: f.via.value, sort_by: f.sort_by.value, sort_order: f.sort_order.value, limit: Number(f.limit.value) });
+  f.addEventListener('change', () => { read(); curl(); });
+  f.addEventListener('submit', (e) => { e.preventDefault(); read(); st.offset = 0; load(); });
+  $('#c-prev').addEventListener('click', () => { st.offset = Math.max(0, st.offset - st.limit); load(); });
+  $('#c-next').addEventListener('click', () => { st.offset += st.limit; load(); });
+  $('#c-q').addEventListener('input', draw);
+  curl();
+}
+
 // Webhooks
 
 async function viewWebhooks() {
@@ -917,6 +975,7 @@ async function route() {
     else if (r === 'monitor') await viewMonitor();
     else if (r === 'otp') await viewOtp();
     else if (r === 'mensagens') await viewMensagens();
+    else if (r === 'contactos') await viewContactos();
     else if (r === 'webhooks') await viewWebhooks();
     else if (r === 'chaves') await viewChaves();
     else if (r === 'gratis') await viewGratis();
